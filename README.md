@@ -82,7 +82,7 @@ This project uses C++ 17 and Premake 5 Alpha 16.
 
 Run the premake executable (inside the "bin" folder) compatible with your operational system and pass in which type of project to generate build files for as an argument.
 
-premake5.exe for Windows, premake5-64bit for 64-bit Linux, premake5-32bit for 32-bit Linux, premake5-macos for MacOS.
+premake5.exe for Windows, premake5-64bit for 64-bit Linux, premake5-32bit for 32-bit Linux, premake5-macos for 64-bit MacOS.
 
 | Option | Description |
 | ------ | ----------- |
