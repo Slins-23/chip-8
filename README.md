@@ -173,7 +173,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Implement dialog which contains all instruction patterns, their complete descriptions and assembly description;
 
-* Let instructions that vary if implementation-dependant (i.e. COSMAC VIP, ETI 660, etc...) be configurable in some dialog. Along with a preset system dropdown in the debug menu;
+* Let instructions that vary if implementation-dependant (i.e. COSMAC VIP, ETI 660, etc...) be configurable in some dialog. Along with a preset configuration dropdown menu that maps the instructions' behavior to match the active system;
 
 * Ability to modify keybindings;
 
