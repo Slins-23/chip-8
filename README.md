@@ -35,6 +35,9 @@ FG Color: White
 So far tested and functional on Windows 10 host, Ubuntu 20.04 64-bit & Ubuntu 16.04 32-bit virtual machines and MacOS Big Sur 64-bit virtual machine.
 
 This is my first emulator, as well as my first time using OpenGL, ImGui, premake, and attempting cross-platform. Please excuse possible flaws and/or poor performance...
+<br>
+<br>
+Also note that I didn't see any CHIP-8 source code when making this - I only read guides about how the CHIP-8 worked, without actual implementation.
 
 # Features
 * Functional CHIP-8 emulation (As far as I'm concerned);
