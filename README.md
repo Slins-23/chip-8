@@ -44,8 +44,8 @@ This is my first emulator, as well as my first time using OpenGL, ImGui, premake
 
 * Ability to modify on-the-fly:
     * Instructions/s - How many instructions are executed every second; 
-    * Delay dec/s - How much does the delay timer get decremented by every second;
-    * Sound dec/s - How much does the delay timer get decremented by every second;
+    * Delay dec/s - How much does the delay timer gets decremented by every second;
+    * Sound dec/s - How much does the delay timer gets decremented by every second;
     * Beep Freq - The frequency at which the beep sound gets played;
     * FPS Limit - What is the maximum amount of frames executed every second through the whole program; 
     * VSync - When activated caps your FPS at your display's refresh rate (independent of FPS limit);
