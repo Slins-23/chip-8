@@ -161,7 +161,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Implement setting that handles emulation speed (presets slow, original, smooth, fast) along with a slider independent of framerate representing a speed multiplier that affects instructions per second, delay decrements per second, sound decrements per second, etc...;
 
-* Implement an option to toggle tiles which draws a non-filled square around every tile in the emulator, then when some tile is hovered pop-up a tooltip displaying its corresponding X and Y coordinates;
+* Implement an option to toggle tiles which draws a non-filled square around every tile in the emulator, then, when some tile is hovered, pop-up a tooltip displaying its corresponding X and Y coordinates;
 
 * Update emulation screen (pixels/texture) only when drawing instructions are triggered;
 
