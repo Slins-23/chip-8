@@ -1,6 +1,6 @@
 # Description
 <center><img src="https://i.imgur.com/YbvAqcA.gif"/></center>
-<p algin="center">(Some frames were deleted to make the GIF smaller)</p>
+<p align="center">(Some frames were deleted to make the GIF smaller)</p>
 <br>
 <br>
 CHIP-8 emulator / debugger made with C++ 17.
