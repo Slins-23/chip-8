@@ -70,7 +70,7 @@ This is my first emulator, as well as my first time using OpenGL, ImGui, premake
 # Building
 <b>Warning: Tested only with vs2019 build of Premake on Windows host and gmake2 for both Linux & MacOS Virtual Machines.
 <br>
-GCC version must be >= 8.1, as the "charconv" header is not available in older versions.
+When compiling for GNU Make, GCC version must be >= 8.1, as the "charconv" header is not available in older versions.
 </b>
 
 This project uses C++ 17 and Premake 5 Alpha 16.
