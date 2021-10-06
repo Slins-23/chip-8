@@ -32,6 +32,8 @@ BG Color: Black
 <br>
 FG Color: White
 
+You can find pre-built binaries for some operational systems in the releases section of this repository.
+
 So far tested and functional on Windows 10 host, Ubuntu 20.04 64-bit & Ubuntu 16.04 32-bit virtual machines and MacOS Big Sur 64-bit virtual machine.
 
 This is my first emulator, as well as my first time using OpenGL, ImGui, premake, and attempting cross-platform. Please excuse possible flaws and/or poor performance...
