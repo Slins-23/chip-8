@@ -199,7 +199,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Improve tracking of FPS in order to optimize distinctively for display and use in the main loop in order to update emulation variables?
 
-* Possibly use threads to separate the emulation from the rest of the program and thus isolate their respective framerates and other variables;
+* Use threads to separate the emulation from the rest of the program and thus isolate their respective framerates and other variables?
 
 * Add option to step/skip back instead of forward only;
 
