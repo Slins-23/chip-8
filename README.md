@@ -181,11 +181,11 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Adjust font size accordingly when window resizes;
 
-* Allow resizing of ImGUI tiles;
+* Allow resizing of ImGui tiles;
 
 * Find, if possible and beneficial, a more concise way of represeting/decoding the instructions in the code other than a long switch statement with nested switch statements;
 
-* Decrease memory usage if possible. After introducing OpenGL and ImGUI (from just using SDL rendering) memory usage went from ~5MB to ~50MB on Windows;
+* Decrease memory usage if possible. After introducing OpenGL and ImGui (from just using SDL rendering) memory usage went from ~5MB to ~50MB on Windows;
 
 * Profile sections of the code and optimize the worst ones;
 
