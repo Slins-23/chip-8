@@ -3,11 +3,11 @@
 <p align="center">(Some frames were deleted to make the GIF smaller)</p>
 <br>
 <br>
-CHIP-8 emulator / debugger made with C++ 17.
+CHIP-8 emulator/debugger made with C++ 17.
 <br>
 SDL 2.0.16 for window creation, event handling and audio.
 <br>
-ImGUI & OpenGL 3 for user interface and rendering.
+ImGui & OpenGL 3 for user interface and rendering.
 <br>
 nativefiledialog for opening file dialogs.
 <br>
@@ -80,7 +80,7 @@ When compiling for GNU Make, GCC version must be >= 8.1, as the "charconv" heade
 
 This project uses C++ 17 and Premake 5 Alpha 16.
 
-Run the premake executable compatible with your operational system and pass in which type of project to generate build files for as an argument.
+Run the premake executable (inside the "bin" folder) compatible with your operational system and pass in which type of project to generate build files for as an argument.
 
 premake5.exe for Windows, premake5-64bit for 64-bit Linux, premake5-32bit for 32-bit Linux, premake5-macos for MacOS.
 
