@@ -1,5 +1,5 @@
 # Description
-<center><img src="https://i.imgur.com/YbvAqcA.gif"/></center>
+<p align="center"><img src="https://i.imgur.com/KqqYhBn.gif"/></p>
 <p align="center">(Some frames were deleted to make the GIF smaller)</p>
 <br>
 <br>
