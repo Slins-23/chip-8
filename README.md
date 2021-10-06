@@ -55,16 +55,11 @@ This is my first emulator, as well as my first time using OpenGL, ImGui, premake
 * Disassembler - Follow PC toggles whether or not to stick to the current instruction.
   <br>
   * All addresses loaded by the ROM (which starts at 0x200) each represent the instruction stored at that address.
-  <br>
-  Note that each instruction allocates 2 bytes (16 bits, or 2 memory addresses).
-  <br>
-  The reason why I didn't make it so that only every 2 addresses (i.e. 0x200, 0x202, 0x204...) were shown is that some ROMs access odd addresses (i.e. Space Invaders) and there would be no proper way to organize the disassembler otherwise.
-  <br>
-  An alternative is to display only every 2 even addresses by default (given the overwhelming majority of ROMs access even addresses exclusively) along with the current instruction, regardless of whether it's odd or not. Then figure out whether this instruction accesses odd addresses, if it does, display also the address accessed by this current instruction, this way you could always follow the current address and see which address is being accessed.
-  <br>
+  * Note that each instruction allocates 2 bytes (16 bits, or 2 memory addresses).
+  * The reason why I didn't make it so that only every 2 addresses (i.e. 0x200, 0x202, 0x204...) were shown is that some ROMs access odd addresses (i.e. Space Invaders) and there would be no proper way to organize the disassembler otherwise.
+  * An alternative is to display only every 2 even addresses by default (given the overwhelming majority of ROMs access even addresses exclusively) along with the current instruction, regardless of whether it's odd or not. Then figure out whether this instruction accesses odd addresses, and if it does, display also the address accessed by this current instruction - This way you could always follow the current address and see which address is being accessed.
   The problem is that if the ROM accesses only odd addresses, you won't be able to inspect each of these addresses without getting to the instruction that accesses each of them first. Not to mention that all of the addresses displayed are pretty much useless, given they're almost all even. This would be too much of a hassle, time consuming, and inefficient for the user.
-  <br>
-  The downsides to my approach is that since all addresses are displayed, the disassembler has much more content and the addresses are possibly harder to follow visually, if the ROM has either even or odd only addresses
+  * The downsides to my approach are that since all addresses are displayed, the disassembler has much more content and the addresses are possibly harder to follow visually, if the ROM has either even or odd only addresses.
 
 * Memory reader;
 
