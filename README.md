@@ -121,7 +121,7 @@ You will need to have installed the SDL2 library in order to build. You can do s
 Afterwards, just run the "premake5-macos" executable in the "bin" folder, passing in your preferred configuration as an argument.
 
 # Notes
-* You can hide/show the debug information by pressing 'H' or clicking the "Toggle Debug (H)" button in the "Debug Info" window;
+* You can hide/show the debug information by pressing 'H' or clicking the "Toggle Debug (H)" button in the "Debug" window;
 
 * Timers do not change when skipping instructions, only when stepping through them or playing/resuming the emulation. This is on purpose;
 
@@ -134,7 +134,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Mouse position not captured properly when I tested on my Ubuntu 16.04 32-bit Virtual Machine;
 
-* Sometimes, the ROM automatically starts executing after loading instead of waiting for the "Start ROM" button to be clicked;
+* Sometimes, the ROM automatically starts executing after being loaded, instead of waiting for the "Start ROM" button to be clicked;
 
 * SDL_GetError() returns "wglMakeCurrent(): The pixel format is invalid.". Need to find out the cause of this issue.
 
