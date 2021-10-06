@@ -193,7 +193,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Allow users to change the text font;
 
-* Add option for saving/loading settings, this should include everything from emulator-specific variables such as instructions per second and including user interface ones such as colors;
+* Add option for saving/loading settings, this should include everything from emulator-specific variables such as instructions per second and include user interface ones such as colors;
 
 * Add clean action to premake;
 
