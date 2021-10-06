@@ -175,7 +175,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Let instructions that vary if implementation-dependant (i.e. COSMAC VIP, ETI 660, etc...) be configurable in some dialog. Along with a preset configuration dropdown menu that maps the instructions' behavior to match the active system;
 
-* Ability to modify keybindings;
+* Ability to modify key bindings;
 
 * Add options to change the background color of window tiles (perhaps individually?), buttons, and primary text color;
 
