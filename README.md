@@ -41,6 +41,15 @@ This is my first interpreter/emulator, as well as my first time using OpenGL, Im
 <br>
 Also note that I didn't see any CHIP-8 source code when making this - I only read guides about how the CHIP-8 worked, without actual implementation.
 
+# Implementation notes
+* Instructions don't currently emulate any one specific system;
+
+* Addresses 0x000-0x1FF are reserved for interpreter-specific data, such as fonts. Addresses after 0x200 are reserved for the ROM;
+  
+* Fonts are stored in the first 80 bytes (0x00-0x50 addresses). You can find their hexadecimal representation in the "RAM.h" file, in the "font" array;
+
+* Stack is capable of storing up to 16 12-bit (16-bit in practice) addresses;
+
 # Features
 * Functional CHIP-8 emulation (As far as I'm concerned);
   
@@ -155,6 +164,10 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 * Document code;
 
 * Improve the messaging, logging and error system;
+
+* Move stack into CHIP-8 RAM (currently is a variable outside the RAM);
+
+* Add implementation specific emulator fonts (i.e. COSMAC VIP, ETI-660, DREAM 6800) and allow user to pick;
 
 * Fix known issues;
 
