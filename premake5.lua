@@ -24,8 +24,8 @@ project "CHIP-8"
 
 	files
 	{
-		"%{prj.name}/src/*.h",
-		"%{prj.name}/src/*.cpp",
+		"%{prj.name}/src/**.h",
+		"%{prj.name}/src/**.cpp",
 		"%{prj.name}/vendor/glad/src/glad.c",
 		"%{prj.name}/vendor/imgui/*.cpp",
 		"%{prj.name}/vendor/imgui/backends/*",

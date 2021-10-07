@@ -157,6 +157,9 @@ namespace CPU
 	std::thread sound_thread;
 	bool closing_sound_thread = false;
 
+	// Optimal, Cosmac VIP, CHIP-48 or Super-Chip
+	const char* implementation = "Optimal";
+
 	void sound_callback() {
 		while (!closing_sound_thread) {
 			if (status == Status::running && sound != 0) {
@@ -458,9 +461,16 @@ namespace CPU
 				*vx -= *vy;
 				break;
 			case 0x6:
-				//*vx = *vy; // Optional
-				*carry_flag = *vx & 0x1;
-				*vx >>= 1;
+				if (implementation == "Cosmac VIP") {
+					*vx = *vy;
+					*carry_flag = *vx & 0x1;
+					*vx >>= 1;
+				}
+				else if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+					*carry_flag = *vx & 0x1;
+					*vx >>= 1;
+				}
+
 				break;
 			case 0x7:
 				if (*vy > *vx) {
@@ -473,9 +483,15 @@ namespace CPU
 				*vx = *vy - *vx;
 				break;
 			case 0xE:
-				//*vx = *vy; // Optional
-				*carry_flag = (*vx >> 7) & 0x1;
-				*vx <<= 1;
+				if (implementation == "Cosmac VIP") {
+					*vx = *vy;
+					*carry_flag = (*vx >> 7) & 0x1;
+					*vx <<= 1;
+				}
+				else if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+					*carry_flag = (*vx >> 7) & 0x1;
+					*vx <<= 1;
+				}
 				break;
 			}
 			break;
@@ -499,8 +515,13 @@ namespace CPU
 			// index_register = NNN;
 			break;
 		case (0xB):
-			pc = RAM::buffer + (NNN + *register_pointer); // Cosmac Vip
-			//pc = NNN + *vx; // CHIP-48, Super Chip
+			if (implementation == "Optimal" || implementation == "Cosmac VIP") {
+				pc = RAM::buffer + (NNN + *register_pointer);
+			}
+			else if (implementation == "CHIP-48" || implementation == "Super Chip") {
+				pc = RAM::buffer + (NNN + *vx);
+			}
+			
 			break;
 		case (0xC):
 			*vx = (rand() % 256) & NN;
@@ -630,74 +651,99 @@ namespace CPU
 				break;
 			case (0x1E):
 				// Interpreters other than Cosmac VIP (Amiga: Spacefight 2091! relies on this)
+				if (implementation == "Optimal" || implementation == "Amiga") {
+					if (*index_register + *vx > 4095) {
+						*carry_flag = 0x1;
+					}
+					else {
+						*carry_flag = 0x0;
+					}
 
-				if (*index_register + *vx > 4095) {
-					*carry_flag = 0x1;
+					*index_register += *vx;
 				}
-				else {
-					*carry_flag = 0x0;
+				else if (implementation == "Cosmac VIP") {
+					*index_register += *vx;
 				}
 
-				*index_register += *vx;
 				//*index_register += 2 * (*vx);
 				break;
 			case (0x0A): {
-				// Non Cosmac Vip
+				if (implementation == "Optimal") {
+					// Non Cosmac Vip
 				//printf("Program halted. Waiting for input.\n");
-				if (!halt && !switched_on) {
-					halt = true;
-					switched_on = true;
-				}
+					if (!halt && !switched_on) {
+						halt = true;
+						switched_on = true;
+					}
 
-				/*
-				bool pressed = false;
-				uint8_t key = 0x00;
+					/*
+					bool pressed = false;
+					uint8_t key = 0x00;
 
-				switch (Graphics::event.type) {
-				case SDL_KEYDOWN:
-					pressed = true;
-					SDL_Scancode current_key = Graphics::event.key.keysym.scancode;
-					key = Graphics::scancode_to_hexa(current_key);
-					break;
-				}
-
-
-
-				if (pressed) {
-					*vx = key;
-				}
-				else {
-					pc -= 2;
-				}
-
-				*/
-
-				//printf("HERE\n");
-				//exit(-1);
-				/*
-				halt ? printf("Waiting for input...\n") : printf("Received input. Key: %d\n", pressed_key);
-				if (halt) {
-					printf("Key when halt %d\n", pressed_key);
-				}
-				*/
+					switch (Graphics::event.type) {
+					case SDL_KEYDOWN:
+						pressed = true;
+						SDL_Scancode current_key = Graphics::event.key.keysym.scancode;
+						key = Graphics::scancode_to_hexa(current_key);
+						break;
+					}
 
 
-				if (!halt) {
-					//printf("Unhalted. Key input received: %d\n", pressed_key);
-					*vx = pressed_key;
-					//printf("Was here. Key: %d\n", pressed_key);
+
+					if (pressed) {
+						*vx = key;
+					}
+					else {
+						pc -= 2;
+					}
+
+					*/
+
+					//printf("HERE\n");
 					//exit(-1);
-					switched_on = false;
-				}
-				else {
-					pc -= 2;
-				}
+					/*
+					halt ? printf("Waiting for input...\n") : printf("Received input. Key: %d\n", pressed_key);
+					if (halt) {
+						printf("Key when halt %d\n", pressed_key);
+					}
+					*/
 
-				/* Cosmac Vip
-				* if (key_pressed_and_released) {
-				*	 *(register_pointer + X) = key_hexadecimal_identifier;
-				* }
-				*/
+
+					if (!halt) {
+						//printf("Unhalted. Key input received: %d\n", pressed_key);
+						*vx = pressed_key;
+						//printf("Was here. Key: %d\n", pressed_key);
+						//exit(-1);
+						switched_on = false;
+					}
+					else {
+						pc -= 2;
+					}
+
+					/* Cosmac Vip
+					* if (key_pressed_and_released) {
+					*	 *(register_pointer + X) = key_hexadecimal_identifier;
+					* }
+					*/
+				}
+				else if (implementation == "Cosmac VIP") {
+					if (!halt && !switched_on) {
+						halt = true;
+						switched_on = true;
+					}
+
+					if (!halt) {
+						//printf("Unhalted. Key input received: %d\n", pressed_key);
+						*vx = pressed_key;
+						//printf("Was here. Key: %d\n", pressed_key);
+						//exit(-1);
+						switched_on = false;
+					}
+					else {
+						pc -= 2;
+					}
+				}
+				
 			}
 					   break;
 			case (0x29): // Buffer should move accordingly to pointer byte
@@ -763,7 +809,14 @@ namespace CPU
 
 				//*/
 
-				memcpy(RAM::buffer + *index_register, register_pointer, X + 1);
+				if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+					memcpy(RAM::buffer + *index_register, register_pointer, X + 1);
+				}
+				else if (implementation == "Cosmac VIP") {
+					memcpy(RAM::buffer + *index_register, register_pointer, X + 1);
+					*index_register += X + 1;
+				}
+				
 
 				/*
 				// Modern, CHIP48 & Super-Chip
@@ -793,7 +846,15 @@ namespace CPU
 				}
 				*/
 
-				memcpy(register_pointer, RAM::buffer + *index_register, X + 1);
+				if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+					memcpy(register_pointer, RAM::buffer + *index_register, X + 1);
+				}
+				else if (implementation == "Cosmac VIP") {
+					memcpy(register_pointer, RAM::buffer + *index_register, X + 1);
+					*index_register += X + 1;
+				}
+
+				
 
 				/*
 				// Modern, CHIP48 & Super-Chip

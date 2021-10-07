@@ -200,6 +200,7 @@ namespace RAM {
 
 		strcpy(rom_path, path);
 
+		// Paths on Windows and Unix systems are not the same: Directory separator in Windows is a backslash '\', on Unix it's a forwardslash '/'.
 #ifdef _WIN32
 		strcpy(rom_title, str_path.substr(str_path.find_last_of("\\") + 1).c_str());
 #else
