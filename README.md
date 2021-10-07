@@ -3,7 +3,7 @@
 <p align="center">(Some frames were deleted to make the GIF smaller)</p>
 <br>
 <br>
-CHIP-8 emulator/debugger made with C++ 17.
+CHIP-8 interpreter/debugger made with C++ 17.
 <br>
 SDL 2.0.16 for window creation, event handling and audio.
 <br>
@@ -36,13 +36,14 @@ You can find pre-built binaries for some operational systems in the releases sec
 
 So far tested and functional on Windows 10 host, Ubuntu 20.04 64-bit & Ubuntu 16.04 32-bit virtual machines and MacOS Big Sur 64-bit virtual machine.
 
-This is my first emulator, as well as my first time using OpenGL, ImGui, premake, and attempting cross-platform. Please excuse possible flaws and/or poor performance...
+This is my first interpreter/emulator, as well as my first time using OpenGL, ImGui, premake, and attempting cross-platform. Please excuse possible flaws and/or poor performance...
 <br>
 <br>
 Also note that I didn't see any CHIP-8 source code when making this - I only read guides about how the CHIP-8 worked, without actual implementation.
 
 # Features
 * Functional CHIP-8 emulation (As far as I'm concerned);
+  
 * Tracking and decimal & hexadecimal representation of all the registers, the program counter, sound & delay timers and stack;
 
 * Pausing, reloading and resetting;
@@ -161,7 +162,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Implement setting that handles emulation speed (presets slow, original, smooth, fast) along with a slider independent of framerate representing a speed multiplier that affects instructions per second, delay decrements per second, sound decrements per second, etc...;
 
-* Implement an option to toggle tiles which draws a non-filled square around every tile in the emulator, then, when some tile is hovered, pop-up a tooltip displaying its corresponding X and Y coordinates;
+* Implement an option to toggle tiles which draws a non-filled square around every tile in the interpreter, then, when some tile is hovered, pop-up a tooltip displaying its corresponding X and Y coordinates;
 
 * Update emulation screen (pixels/texture) only when drawing instructions are triggered;
 
@@ -193,7 +194,7 @@ Afterwards, just run the "premake5-macos" executable in the "bin" folder, passin
 
 * Allow users to change the text font;
 
-* Add option for saving/loading settings, this should include everything from emulator-specific variables such as instructions per second and include user interface ones such as colors;
+* Add option for saving/loading settings, this should include everything from emulation-specific variables such as instructions per second and include user interface ones such as colors;
 
 * Add clean action to premake;
 
