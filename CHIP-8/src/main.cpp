@@ -119,7 +119,6 @@ int main(int argc, char* argv[]) {
 
 				switch (Graphics::event.type) {
 					case SDL_QUIT:
-						CPU::close();
 						Graphics::close();
 						RAM::close();
 						return 1;
@@ -207,19 +206,6 @@ int main(int argc, char* argv[]) {
 				ImGui::NewFrame();
 
 				Window_Manager::draw_windows();
-				/*
-				{
-					windows.rom_info();
-					windows.cpu_info();
-					windows.stack_info();
-					windows.debug_info();
-					windows.keyboard_info();
-					windows.display_info();
-					windows.memory_info();
-					windows.disassembler_info();
-					
-				}
-				*/
 				
 				ImGui::Render();
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

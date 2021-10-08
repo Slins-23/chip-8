@@ -14,22 +14,12 @@ namespace Display_Window {
 		ImVec2 size = ImGui::GetWindowSize();
 		glBindFramebuffer(GL_FRAMEBUFFER, Graphics::fbo);
 		glBindTexture(GL_TEXTURE_2D, Graphics::textureFbo);
-		//glClear(GL_COLOR_BUFFER_BIT);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Graphics::horizontal_tiles, Graphics::vertical_tiles, 0, GL_RGBA, GL_UNSIGNED_BYTE, Graphics::original_pixels);
-		//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, Graphics::pixels);
-				// 0 after height should be 1 for border
-				//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Graphics::rbo);
+		//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Graphics::rbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Graphics::textureFbo, 0);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-			//ImGui::Image((ImTextureID)Graphics::fbo, size);
-			//ImGui::Image((ImTextureID)Graphics::fbo, ImVec2(size.x, size.y));
 			ImGui::Image((ImTextureID)Graphics::fbo, size);
-
-
-
-			//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, NULL);
-
 		}
 		else {
 			printf("Could not initialize framebuffer.\n");

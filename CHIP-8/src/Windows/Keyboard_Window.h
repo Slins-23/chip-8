@@ -43,10 +43,7 @@ namespace Keyboard_Window {
 	}
 
 	void MakeNCheckBtn(const char* hex_letter, uint8_t hex_code) {
-		//printf("Color: %d\n", ImGui::GetStyle().Colors[ImGuiCol_Button]);
-
 		if ((CPU::keys >> hex_code) & 1) {
-			//printf("HERE\n"); Problem occurs because the hover color takes precedence over active color, therefore overwrites
 			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
 			ImGui::Button(hex_letter, ImVec2(btnSize.x, btnSize.y));
 			//ImGui::GetStyle().Colors
@@ -57,12 +54,10 @@ namespace Keyboard_Window {
 		}
 
 		if (ImGui::IsItemActivated()) {
-			//printf("ACT\n");
 			CPU::HandlePressDown(hex_code);
 		}
 
 		if (ImGui::IsItemDeactivated()) {
-			//printf("DEAC\n");
 			CPU::HandlePressUp(hex_code);
 		}
 	}
@@ -93,49 +88,37 @@ namespace Keyboard_Window {
 		ImGui::SetCursorPos(ImVec2(initialX_padding * 0.8, initialY_padding * 1.15)); //keyboard_spacing(0, vertical_padding, initialY_padding)));
 		MakeNCheckBtn("1", 0x1);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("2", 0x2);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("3", 0x3);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("C", "4", 0xC);
 
 		ImGui::SetCursorPos(ImVec2(initialX_padding * 0.8, keyboard_spacing(1, vertical_padding, initialY_padding * 1.15)));
 		MakeNCheckBtn("4", "Q", 0x4);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("5", "W", 0x5);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("6", "E", 0x6);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("D", "R", 0xD);
 
 		ImGui::SetCursorPos(ImVec2(initialX_padding * 0.8, keyboard_spacing(2, vertical_padding, initialY_padding * 1.15)));
 		MakeNCheckBtn("7", "A", 0x7);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("8", "S", 0x8);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("9", "D", 0x9);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("E", "F", 0xE);
 
 		ImGui::SetCursorPos(ImVec2(initialX_padding * 0.8, keyboard_spacing(3, vertical_padding, initialY_padding * 1.15)));
 		MakeNCheckBtn("A", "Z", 0xA);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("0", "X", 0x0);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("B", "C", 0xB);
 		ImGui::SameLine();
-		//ImGui::SameLine(horizontal_padding);
 		MakeNCheckBtn("F", "V", 0xF);
 
 		ImGui::End();

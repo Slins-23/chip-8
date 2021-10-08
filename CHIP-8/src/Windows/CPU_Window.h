@@ -78,7 +78,6 @@ namespace CPU_Window {
 
 		ImGui::Columns();
 		ImGui::Separator();
-		//ImGui::Text("%.1f FPS (%.3f ms/frame) ", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
 		ImGui::Text("%.1f FPS (%.3f ms/frame) ", CPU::current_framerate, 1000.f / CPU::current_framerate);
 		ImGui::End();
 	}

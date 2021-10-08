@@ -15,41 +15,6 @@ std::string hex_to_decstr(std::string hex_val) {
 	return ss.str();
 }
 
-
-// From https://github.com/mysql/mysql-server/blob/5.7/strings/int2str.c
-char *int10_to_str(long int val,char *dst,int radix)
-{
-  char buffer[65];
-  char *p;
-  long int new_val;
-  unsigned long int uval = (unsigned long int) val;
-
-  if (radix < 0)				/* -10 */
-  {
-    if (val < 0)
-    {
-      *dst++ = '-';
-      /* Avoid integer overflow in (-val) for LLONG_MIN (BUG#31799). */
-      uval = (unsigned long int)0 - uval;
-    }
-  }
-
-  p = &buffer[sizeof(buffer)-1];
-  *p = '\0';
-  new_val= (long) (uval / 10);
-  *--p = '0'+ (char) (uval - (unsigned long) new_val * 10);
-  val = new_val;
-
-  while (val != 0)
-  {
-    new_val=val/10;
-    *--p = '0' + (char) (val-new_val*10);
-    val= new_val;
-  }
-  while ((*dst++ = *p++) != 0) ;
-  return dst-1;
-}
-
 #pragma once
 
 struct Registers {
@@ -68,8 +33,8 @@ struct Registers {
 	uint8_t VC = NULL;
 	uint8_t VD = NULL;
 	uint8_t VE = NULL;
-	uint8_t VF = NULL; // Flag register? Carry bit?
-	uint16_t I = NULL; // Index register, "used to point at locations in memory"
+	uint8_t VF = NULL; // Flag register
+	uint16_t I = NULL; // Index register
 };
 
 struct Keys {
@@ -97,16 +62,20 @@ enum Status {
 	paused
 };
 
+enum Implementation {
+	Optimal,
+	Cosmac_VIP,
+	Chip_48,
+	Super_Chip,
+	Amiga,
+};
+
 #pragma once
 namespace CPU
 {
 	uint8_t* pc = nullptr;
-	//uint16_t* pc = nullptr;
-	//void* pc = nullptr;
-	//uint8_t delay = 0xFF;
 	uint8_t delay = 0x00;
 	uint8_t sound = 0x00;
-	//uint8_t sound = 0xFF;
 
 	uint16_t keys = 0;
 	uint8_t pressed_key = 0;
@@ -134,11 +103,9 @@ namespace CPU
 
 	int delayDecPerSec = 60;
 	int soundDecPerSec = 60;
-	//int timers_decrement_per_second = 60;
 
 	int instructions_per_delay_decrement = round((double)instructionsPerSecond / delayDecPerSec);
 	int instructions_per_sound_decrement = round((double)instructionsPerSecond / soundDecPerSec);
-	//int instructions_per_decrement = instructionsPerSecond / timers_decrement_per_second; // Rounded to nearest instruction
 
 	uint8_t status = Status::stopped;
 
@@ -158,27 +125,7 @@ namespace CPU
 	bool closing_sound_thread = false;
 
 	// Optimal, Cosmac VIP, CHIP-48 or Super-Chip
-	const char* implementation = "Optimal";
-
-	void sound_callback() {
-		while (!closing_sound_thread) {
-			if (status == Status::running && sound != 0) {
-				//printf("Calc res: %f\n", ((double)sound / (double)soundDecPerSec) * 1000.f);
-				//printf("Sound: %d\n", sound);
-				//toot(220, ceil(((double) sound / (double)soundDecPerSec) * 1000.f));
-				//toot(220, ceil(((double)(sound + 3) / (double)soundDecPerSec) * 1000.f));
-			}
-		}
-	}
-
-	void start_sound_thread() {
-		sound_thread = std::thread(sound_callback);
-	}
-
-	void close_sound_thread() {
-		closing_sound_thread = true;
-		sound_thread.join();
-	}
+	Implementation implementation = Implementation::Optimal;
 
 	void decrement_delay(int times) {
 		for (int i = 0; i < times; i++) {
@@ -192,28 +139,8 @@ namespace CPU
 		}
 	}
 
-	void print_bits(int value, uint8_t byte_size) {
-		uint8_t bit_places = byte_size * 8;
-
-		printf("Decimal value: %d | Size in bytes: %d | Size in bits: %d | Bit places to print: %d\n", value, byte_size, byte_size * 8, byte_size * 8);
-		for (uint8_t bit = 0; bit < bit_places; bit++) {
-			bool current_bit = (value >> (bit_places - 1 - bit)) & 1;
-			printf("%d", current_bit);
-		}
-		printf("\n");
-	}
-
-	void print_bits(int value, uint8_t byte_size, uint8_t bit_places) {
-		printf("Decimal value: %d | Size in bytes: %d | Size in bits: %d | Bit places to print: %d\n", value, byte_size, byte_size * 8, bit_places);
-		for (uint8_t bit = 0; bit < bit_places; bit++) {
-			bool current_bit = (value >> (bit_places - 1 - bit)) & 1;
-			printf("%d", current_bit);
-		}
-		printf("\n");
-	}
-
 	void update_delay_N_sound_manual() {
-		if (delay > 0)	delay--;
+		if (delay > 0) delay--;
 		if (sound > 0) sound--;
 	}
 
@@ -223,88 +150,12 @@ namespace CPU
 		update_delay_N_sound_manual();
 	}
 
-	void decrement_delay_N_sound() { // RUN AT 60 TIMES PER SECOND
-		while (!stop_delay && !stop_sound) {
-			//printf("HERE\n");
-			// printf("here\n");
-			// if (sound != 0) play_beep();
-
-			while (Graphics::updating_colors) {
-
-			}
-
-			if (status == Status::running) {
-				update_delay_N_sound();
-			}
-			else if (status == Status::stopped) { // Race condition workaround (when reset it's sometimes a little less than 0xFF)
-				delay = 0xFF;
-				sound = 0xFF;
-			}
-
-			//if (delay == 0) delay = 0xFF;
-			//if (sound == 0) sound = 0xFF;
-		}
-
-		// delay = 0xFF; // Reset after becoming 0?
-
-		// every second decrement 60
-	}
-
-	void print() {
-		std::cout << "Sound: " << (int)sound << " | " << "Delay: " << (int)delay << std::endl;
-	}
-
-	void close() {
-		//stop_cpu = stop_delay = stop_sound = true;
-		//cpu_thread.join();
-		//delay_N_sound_thread.join();
-	}
-
 	void step_one() {
-		//uint32_t newFrameStart = SDL_GetTicks();
-		/*
-				frametime = SDL_GetTicks() - frameStart;
-
-				printf("Iteration: %d | Frametime: %d\n", iteration, frametime);
-
-				if (iteration == 0) {
-					frameStart = SDL_GetTicks();
-					iteration++;
-				}
-				else if (iteration < instructionsPerSecond) {
-					iteration++;
-				}
-				else {
-					iteration = 0;
-				}
-
-				if (millisecondsPerInstruction < frametime) {
-					std::this_thread::sleep_for(std::chrono::milliseconds(frametime - millisecondsPerInstruction));
-				}
-				else {
-					printf("NA\n");
-				}
-
-				*/
-
-
-				//RAM::get_instruction(pc);
-				//pc += 2; // Goes to next address
-				//uint16_t instruction = (*pc);
 		uint16_t instruction = (*pc << 8) | *(pc + 1);
 		current_instruction = instruction;
 
-		// << 7
 		pc += 2;
 		uint16_t next_instruction = (*pc << 8) | *(pc + 1);
-
-		//printf("Instruction: %d\n", instruction);
-
-		//printf("Instruction: %d\n", instruction);
-
-		//uint16_t instruction = Memory::buffer.find(pc);
-		//pc += 2;
-		//decode(instruction);
 
 		uint8_t first_nibble = instruction >> 12; // Tells which type of instruction
 		uint8_t X = (instruction >> 8) & 0xF; // Looks up one of the 16 VX registers from V0 through VF;
@@ -317,39 +168,6 @@ namespace CPU
 		uint8_t* vy = (uint8_t*)(register_pointer + Y);
 		uint8_t* carry_flag = (uint8_t*)(register_pointer + 15);
 		uint16_t* index_register = (uint16_t*)(register_pointer + 16);
-		//uint16_t*& index_register = (register_pointer + 16);
-		/*
-
-		char addr[5];
-		_itoa_s(instruction, addr, 16);
-
-		std::cout << "Address (" << ok << ")" << ": 0x";
-
-		int i = 0;
-		while (addr[i] != '\0') {
-			std::cout << (char)toupper(addr[i]);
-			i++;
-		}
-
-		printf("\n");
-		ok++;
-
-		*/
-
-		//print();
-
-		/*
-		char addr[16], instr[16];
-		_itoa_s(pc - RAM::buffer, addr, 16);
-		_itoa_s(instruction, instr, 16);
-
-		printf("0x%s: %s\n", addr, instr);
-		*/
-
-
-
-
-		//std::cout << " | 1st nibble: " << (int) first_nibble << " | 2nd nibble: " << (int)X << " | 3rd nibble: " << (int)Y << " | 4th nibble: " << (int)N << " | Second byte: " << (int)NN << " | 2nd, 3rd, 4th: " << (int)NNN;
 
 		switch (first_nibble) {
 		case (0x0):
@@ -358,8 +176,6 @@ namespace CPU
 				Graphics::clear_window();
 				break;
 			case (0x0EE):
-				//pc = RAM::buffer + RAM::stack->top()->address;
-				//RAM::stack->pop();
 				RAM::sp--;
 				pc = RAM::buffer + *RAM::sp;
 				*RAM::sp = 0;
@@ -371,22 +187,16 @@ namespace CPU
 			break;
 		case (0x1):
 			pc = RAM::buffer + NNN;
-			//printf("Buffer start address: %d\n", RAM::buffer);
-			//printf("Actual address/offset: %d\n", NNN);
-			//printf("Added addresses: %d\n", RAM::buffer + NNN);
 			break;
 		case (0x2):
-			//RAM::stack->push(pc);
-			//RAM::stack->push(pc - RAM::buffer);
 			*RAM::sp = pc - RAM::buffer;
 			RAM::sp++;
 			pc = RAM::buffer + NNN;
-			//callfn(RAM::get_from_buffer(NNN));
 			break;
 		case (0x3):
 			if (*vx == NN) {
 				// Skip
-				pc += 2; // ?? Should this instruction be skipped, or the next one? Assuming next one.
+				pc += 2;
 			}
 			else {
 				// Don't skip
@@ -395,7 +205,7 @@ namespace CPU
 		case (0x4):
 			if (*vx != NN) {
 				// Skip
-				pc += 2; // ?? Should this instruction be skipped, or the next one? Assuming next one.
+				pc += 2;
 			}
 			else {
 				// Don't skip
@@ -404,7 +214,7 @@ namespace CPU
 		case (0x5):
 			if (*vx == *vy) {
 				// Skip
-				pc += 2; // ?? Should this instruction be skipped, or the next one? Assuming next one.
+				pc += 2;
 			}
 			else {
 				// Don't skip
@@ -461,12 +271,12 @@ namespace CPU
 				*vx -= *vy;
 				break;
 			case 0x6:
-				if (implementation == "Cosmac VIP") {
+				if (implementation == Implementation::Cosmac_VIP) {
 					*vx = *vy;
 					*carry_flag = *vx & 0x1;
 					*vx >>= 1;
 				}
-				else if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+				else if (implementation == Implementation::Optimal || implementation == Implementation::Chip_48 || implementation == Implementation::Super_Chip) {
 					*carry_flag = *vx & 0x1;
 					*vx >>= 1;
 				}
@@ -483,12 +293,12 @@ namespace CPU
 				*vx = *vy - *vx;
 				break;
 			case 0xE:
-				if (implementation == "Cosmac VIP") {
+				if (implementation == Implementation::Cosmac_VIP) {
 					*vx = *vy;
 					*carry_flag = (*vx >> 7) & 0x1;
 					*vx <<= 1;
 				}
-				else if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+				else if (implementation == Implementation::Optimal || implementation == Implementation::Chip_48 || implementation == Implementation::Super_Chip) {
 					*carry_flag = (*vx >> 7) & 0x1;
 					*vx <<= 1;
 				}
@@ -499,26 +309,20 @@ namespace CPU
 		case (0x9):
 			if (*vx != *vy) {
 				// Skip
-				pc += 2; // ?? Should this instruction be skipped, or the next one? Assuming next one.
+				pc += 2;
 			}
 			else {
 				// Don't skip
 			}
 			break;
 		case (0xA):
-			// Should the I point to NNN or should I be NNN?
-			// 
-			// Value of address pointed to by I is NNN
 			*index_register = NNN;
-
-			// Value of I is NNN
-			// index_register = NNN;
 			break;
 		case (0xB):
-			if (implementation == "Optimal" || implementation == "Cosmac VIP") {
+			if (implementation == Implementation::Optimal || implementation == Implementation::Cosmac_VIP) {
 				pc = RAM::buffer + (NNN + *register_pointer);
 			}
-			else if (implementation == "CHIP-48" || implementation == "Super Chip") {
+			else if (implementation == Implementation::Chip_48 || implementation == Implementation::Super_Chip) {
 				pc = RAM::buffer + (NNN + *vx);
 			}
 			
@@ -534,106 +338,29 @@ namespace CPU
 			// At vertical coordinate VY
 			// All bits in the sprite that are 1 should flip (not operator) the pixels they correspond to
 			// If any of the pixels get turned off (0/black), VF (carry_flag) gets set to 1. Otherwise, it gets set to 0.
-			//printf("Instruction: %d | VX: %d | VY: %d | N: %d\n", instruction, *vx, *vy, N);
 
 			Graphics::draw_sprite(*vx, *vy, N, RAM::buffer + *index_register, carry_flag); // N is up to 16
 			break;
 		case (0xE):
 			switch (NN) {
 			case (0x9E): {
-				//printf("1\n");
-				//exit(-1);
-				//bool pressed = false;
-				//SDL_Scancode hexa_to_scancode = Graphics::hexa_to_scancode(X);
-
-
-				/*
-				printf("Event type: %d\n", Graphics::event.type);
-				printf("Pressed key's scancode: %d\n", Graphics::event.key.keysym.scancode);
-				printf("Target hexa: %d | Target scancode: %d\n\n", X, hexa_to_scancode);
-				*/
-
-				/*
-				if (Graphics::event.type == SDL_KEYDOWN || Graphics::event.type == SDL_KEYUP) {
-					SDL_Scancode pressed_key = Graphics::event.key.keysym.scancode;
-					pressed = hexa_to_scancode == pressed_key;
-				}
-
-
-				if (pressed) {
-					// Skip next
-					pc += 2; // ?? Should this instruction be skipped, or the next one ? Assuming next one.
-					//exit(-1);
-				}
-				else {
-					// Don't skip
-				}
-				*/
-
+				// Skip if key in register VX is pressed
 				if ((keys >> *vx) & 1) {
-					//printf("Key %d is pressed. Skipping next instruction.\n", *vx);
 					pc += 2;
 				}
 				else {
-					//printf("Key %d is not pressed. Proceeding normally to next instruction.\n", *vx);
 				}
 			}
 					   break;
 			case (0xA1): {
-				//exit(-1);
-				//bool pressed = false;
-				//SDL_Scancode hexa_to_scancode = Graphics::hexa_to_scancode(X);
-
-				/*
-				printf("Event type: %d\n", Graphics::event.type);
-				printf("Pressed key's scancode: %d\n", Graphics::event.key.keysym.scancode);
-				printf("Target hexa: %d | Target scancode: %d\n\n", X, hexa_to_scancode);
-				*/
-
-				/*
-
-				if (Graphics::event.type == SDL_KEYDOWN || Graphics::event.type == SDL_KEYUP) {
-					SDL_Scancode pressed_key = Graphics::event.key.keysym.scancode;
-					pressed = hexa_to_scancode == pressed_key;
-				}
-
-				*/
-
-				//printf("Called. Key in hexa: %d | Key scancode: %d\n", X, hexa_to_scancode);
-
-				/*
-
-				if (!pressed) {
-					//printf("Not pressed\n");
-					// Skip next
-					pc += 2; // ?? Should this instruction be skipped, or the next one ? Assuming next one.
-				}
-				else {
-					//exit(-1);
-					//exit(-1);
-					// Don't skip
-				}
-				*/
-
+				// Skip if key in register VX is not pressed
 				if (!((keys >> *vx) & 1)) {
-					//printf("Key %d is not pressed. Skipping next instruction.\n", *vx);
 					pc += 2;
 				}
 				else {
-					//printf("Key %d is pressed. Proceeding normally to next instruction.\n", *vx);
 				}
-
-				/*
-				if (!((keys >> X) & 1)) {
-					printf("Key %d is not pressed. Skipping next instruction.\n", X);
-					pc += 2;
-				}
-				else {
-					printf("Key %d is pressed. Proceeding normally to next instruction.\n", X);
-				}
-				*/
 			}
-					   break;
+				break;
 			default:
 				break;
 			}
@@ -644,14 +371,13 @@ namespace CPU
 				*vx = delay;
 				break;
 			case (0x15):
-				delay = *vx; // Deadlock? Possible if accessing variable at the same time as thread?
+				delay = *vx;
 				break;
 			case (0x18):
-				sound = *vx; // Deadlock? Possible if accessing variable at the same time as thread?
+				sound = *vx;
 				break;
 			case (0x1E):
-				// Interpreters other than Cosmac VIP (Amiga: Spacefight 2091! relies on this)
-				if (implementation == "Optimal" || implementation == "Amiga") {
+				if (implementation == Implementation::Optimal || implementation == Implementation::Amiga) {
 					if (*index_register + *vx > 4095) {
 						*carry_flag = 0x1;
 					}
@@ -661,59 +387,22 @@ namespace CPU
 
 					*index_register += *vx;
 				}
-				else if (implementation == "Cosmac VIP") {
+				else if (implementation == Implementation::Cosmac_VIP) {
 					*index_register += *vx;
 				}
 
-				//*index_register += 2 * (*vx);
 				break;
 			case (0x0A): {
-				if (implementation == "Optimal") {
+				if (implementation == Implementation::Optimal) {
 					// Non Cosmac Vip
-				//printf("Program halted. Waiting for input.\n");
+					// Loops until any key is pressed
 					if (!halt && !switched_on) {
 						halt = true;
 						switched_on = true;
 					}
 
-					/*
-					bool pressed = false;
-					uint8_t key = 0x00;
-
-					switch (Graphics::event.type) {
-					case SDL_KEYDOWN:
-						pressed = true;
-						SDL_Scancode current_key = Graphics::event.key.keysym.scancode;
-						key = Graphics::scancode_to_hexa(current_key);
-						break;
-					}
-
-
-
-					if (pressed) {
-						*vx = key;
-					}
-					else {
-						pc -= 2;
-					}
-
-					*/
-
-					//printf("HERE\n");
-					//exit(-1);
-					/*
-					halt ? printf("Waiting for input...\n") : printf("Received input. Key: %d\n", pressed_key);
-					if (halt) {
-						printf("Key when halt %d\n", pressed_key);
-					}
-					*/
-
-
 					if (!halt) {
-						//printf("Unhalted. Key input received: %d\n", pressed_key);
 						*vx = pressed_key;
-						//printf("Was here. Key: %d\n", pressed_key);
-						//exit(-1);
 						switched_on = false;
 					}
 					else {
@@ -726,34 +415,30 @@ namespace CPU
 					* }
 					*/
 				}
-				else if (implementation == "Cosmac VIP") {
+				/*
+				else if (implementation == Implementation::Cosmac_VIP) {
 					if (!halt && !switched_on) {
 						halt = true;
 						switched_on = true;
 					}
 
 					if (!halt) {
-						//printf("Unhalted. Key input received: %d\n", pressed_key);
 						*vx = pressed_key;
-						//printf("Was here. Key: %d\n", pressed_key);
-						//exit(-1);
 						switched_on = false;
 					}
 					else {
 						pc -= 2;
 					}
 				}
+				*/
 				
 			}
 					   break;
-			case (0x29): // Buffer should move accordingly to pointer byte
-				//*index_register = (RAM::buffer + (RAM::fontSpaceInBytes / 2) + (RAM::interpreterSpaceInBytes / sizeof(uint16_t) + 16) + (*vx * 5); // BUFFER_START FIX WRONG BYTES MOVING POINTER
+			case (0x29):
 			{
 				uint8_t character = (*vx) & 0x0F;
 				*index_register = character * 5;
 			}
-			//*index_register = *vx * 5; // BUFFER_START FIX WRONG BYTES MOVING POINTER
-			// Point to address in memory, or address of VX?
 			break;
 			case (0x33):
 			{
@@ -761,8 +446,6 @@ namespace CPU
 					uint8_t onep = *vx % 10;
 					uint8_t tenp = ((*vx % 100) - onep) / 10;
 					uint8_t hunp = ((*vx % 1000) - (tenp * 10) - onep) / 100;
-
-					//printf("Num: %d, 100s: %d, 10s: %d, 1s: %d", *vx, hunp, tenp, onep);
 
 					*(RAM::buffer + *index_register) = hunp;
 					*(RAM::buffer + *index_register + 1) = tenp;
@@ -772,47 +455,22 @@ namespace CPU
 					uint8_t onep = *vx % 10;
 					uint8_t tenp = ((*vx % 100) - onep) / 10;
 
-					//printf("Num: %d, 10s: %d, 1s: %d", *vx, tenp, onep);
 					*(RAM::buffer + *index_register) = 0;
 					*(RAM::buffer + *index_register + 1) = tenp;
 					*(RAM::buffer + *index_register + 2) = onep;
-					/*
-					*
-					*(RAM::buffer + *index_register) = tenp;
-					*(RAM::buffer + *index_register + 1) = onep;
-					* */
-
 				}
 				else {
 					*(RAM::buffer + *index_register) = 0;
 					*(RAM::buffer + *index_register + 1) = 0;
 					*(RAM::buffer + *index_register + 2) = *vx;
-					//printf("Num: %d, 1s: %d", *vx, *vx);
-					// 
-					//*(RAM::buffer + *index_register) = *vx;
 				}
 			}
 			break;
-			case (0x55): // Index register should point to correct address. How to mix it with buffer?
-				// Older, Cosmac VIP
-				///*
-
-				/*
-				for (int i = 0; i <= X; i++) {
-					memcpy(RAM::buffer + *index_register, register_pointer + i, 1);
-					(*index_register)++;
-
-					// RAM::buffer[*index_register] = *(register_pointer + i);
-					// (*index_register)++
-				}
-				*/
-
-				//*/
-
-				if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+			case (0x55):
+				if (implementation == Implementation::Optimal || implementation == Implementation::Chip_48 || implementation == Implementation::Super_Chip) {
 					memcpy(RAM::buffer + *index_register, register_pointer, X + 1);
 				}
-				else if (implementation == "Cosmac VIP") {
+				else if (implementation == Implementation::Cosmac_VIP) {
 					memcpy(RAM::buffer + *index_register, register_pointer, X + 1);
 					*index_register += X + 1;
 				}
@@ -826,30 +484,11 @@ namespace CPU
 				*/
 				break;
 			case (0x65):
-				// Older, Cosmac VIP
-				/*
-				for (int i = 0; i < X; i++) {
-					memcpy((void*)(register_pointer + i), (RAM::buffer + *index_register + i), 1);
-					//*(register_pointer + i) = *(*index_register + i);
-					//(*index_register)++;
-				}
-				*/
 
-				/*
-				for (int i = 0; i <= X; i++) {
-					memcpy(register_pointer + i, RAM::buffer + *index_register, 1);
-					//memcpy(RAM::buffer + *index_register, register_pointer + i, 1);
-					(*index_register)++;
-
-					// RAM::buffer[*index_register] = *(register_pointer + i);
-					// (*index_register)++
-				}
-				*/
-
-				if (implementation == "Optimal" || implementation == "CHIP-48" || implementation == "Super-Chip") {
+				if (implementation == Implementation::Optimal || implementation == Implementation::Chip_48 || implementation == Implementation::Super_Chip) {
 					memcpy(register_pointer, RAM::buffer + *index_register, X + 1);
 				}
-				else if (implementation == "Cosmac VIP") {
+				else if (implementation == Implementation::Cosmac_VIP) {
 					memcpy(register_pointer, RAM::buffer + *index_register, X + 1);
 					*index_register += X + 1;
 				}
@@ -869,14 +508,8 @@ namespace CPU
 			}
 			break;
 		default:
-			//std::cout << "Unknown instruction: " << instruction << std::endl;
 			break;
 		}
-
-		//uint32_t newFrameTime = SDL_GetTicks() - newFrameStart;
-		//if (millisecondsPerInstruction > newFrameTime) {
-//			std::this_thread::sleep_for(std::chrono::milliseconds(millisecondsPerInstruction - newFrameTime));
-		//}
 
 		stepped_delay++;
 		stepped_sound++;
@@ -925,34 +558,11 @@ namespace CPU
 	}
 
 	void set_pressed(uint16_t hexc) {
-		//keys = keys | (1 << hexc);
-		//uint16_t b4 = keys;
-
 		keys |= (1 << hexc);
-
-		/*
-		printf("Before: \n");
-		print_bits(b4, sizeof(b4));
-		printf("After: ");
-		print_bits(keys, sizeof(keys));
-		printf("\n\n");
-		printf("--------------------\n");
-		*/
 	}
 
 	void release_pressed(uint16_t hexc) {
-		//uint16_t b4 = keys;
-
 		keys &= (0xFFFF ^ (1 << hexc));
-
-		/*
-		printf("Before: \n");
-		print_bits(b4, sizeof(b4));
-		printf("After: ");
-		print_bits(keys, sizeof(keys));
-		printf("\n\n");
-		printf("--------------------\n");
-		*/
 	}
 
 	void HandlePressDown(uint8_t hexc) {
@@ -980,8 +590,6 @@ namespace CPU
 
 
 	void decToHex(char (&storage)[5], uint16_t dec) {
-		//char* addr = (char*)malloc(5);
-		//_itoa_s(dec, storage, 16);
 		int2str(dec, storage, 16, 1);
 
 		/*
@@ -1098,8 +706,6 @@ namespace CPU
 		stop_cpu = stop_sound = stop_delay = false;
 		closed = false;
 
-		//delay = 0xFF;
-		//sound = 0xFF;
 		delay = 0x00;
 		sound = 0x00;
 		keys = 0;
@@ -1114,9 +720,6 @@ namespace CPU
 		frameStart = 0;
 		frametime = 0;
 
-		
-
-		/*
 		*(register_pointer) = NULL;
 		*(register_pointer + 1) = NULL;
 		*(register_pointer + 2) = NULL;
@@ -1134,53 +737,22 @@ namespace CPU
 		*(register_pointer + 14) = NULL;
 		*(register_pointer + 15) = NULL;
 		*(register_pointer + 16) = NULL;
-		*/
-
-		* (register_pointer) = 0;
-		*(register_pointer + 1) = 1;
-		*(register_pointer + 2) = 2;
-		*(register_pointer + 3) = 3;
-		*(register_pointer + 4) = 4;
-		*(register_pointer + 5) = 5;
-		*(register_pointer + 6) = 6;
-		*(register_pointer + 7) = 7;
-		*(register_pointer + 8) = 8;
-		*(register_pointer + 9) = 9;
-		*(register_pointer + 10) = 10;
-		*(register_pointer + 11) = 11;
-		*(register_pointer + 12) = 12;
-		*(register_pointer + 13) = 13;
-		*(register_pointer + 14) = 14;
-		*(register_pointer + 15) = 15;
-		*(register_pointer + 16) = 16;
 
 		pc = (uint8_t*)(RAM::buffer + RAM::interpreterSpaceInBytes);
-
-		/*
-		for (int i = 0; i < Graphics::width * Graphics::height; i++) {
-			Graphics::pixels[i] = Graphics::background;
-			Graphics::copy_buffer[i] = Graphics::pixels[i];
-		}
-		*/
 
 		for (int i = 0; i < Graphics::horizontal_tiles * Graphics::vertical_tiles; i++) {
 			Graphics::original_pixels[i] = Graphics::background;
 		}
 		
+		// clear stack
 		for (int i = 0; i < RAM::stack_size; i++) {
 			RAM::sp_addr[i] = 0;
 		}
-		// clear stack
 	}
 
 	void start() {
 		reset();
 		status = Status::running;
-	}
-
-	void init_threads() {
-		delay_N_sound_thread = std::thread(decrement_delay_N_sound);
-		cpu_thread = std::thread(fetch_decode_exec);
 	}
 
 	void decrement(int times) {
@@ -1230,7 +802,6 @@ namespace CPU
 		return storage;
 	}
 
-	// Free returned pointer after use
 	void convert_register(char (&result)[9], uint8_t reg) {
 		//char result[9] = "";
 		//char* result = (char*) calloc(9, 1);
@@ -1264,21 +835,12 @@ namespace CPU
 		
 		result[final_char_idx - 1] = ')'; // VX (__)
 		result[final_char_idx] = '\0'; // VX (__)\0
-
-		//result = (char*) realloc(result, final_char_idx + 1); // Shrinks char array if necessary. Strcpy stops at null character, so the remaining unused space wouldn't affect the final string. This saves up to 2 bytes...
-
-		//return result;
 	}
 
 	// Free returned pointer after use
 	void convert_addr(char (&result)[15], uint16_t addr) {
 		char conversion_res[5] = "";
 		decToHex(conversion_res, addr);
-		//char result[13] = "";
-		//char* result = (char*)calloc(13, 1);
-		//char* converted = decToHex_alternative(addr);
-
-		// ADDR (65536)
 
 		size_t i = 0;
 		while (conversion_res[i] != '\0') {
@@ -1290,8 +852,6 @@ namespace CPU
 		strcpy(result + 2, conversion_res);
 		result[2 + i] = ' ';
 		result[2 + i + 1] = '(';
-
-		//free(converted);
 
 		char register_value_arr[6] = ""; // Up to 65536 (5 characters), including null character
 		std::to_chars(register_value_arr, register_value_arr + 5, addr);
@@ -1330,13 +890,8 @@ namespace CPU
 
 		result[final_char_idx - 1] = ')';
 		result[final_char_idx] = '\0';
-
-		//result = (char*) realloc(result, final_char_idx + 1); // Shrinks char array if necessary. Strcpy stops at null character, so the remaining unused space wouldn't affect the final string. This saves up to 4 bytes...
-
-		//return result;
 	}
 
-	// Free returned pointer after use
 	void make_instruction_short(char (&result)[40],const char* operation, const char* format, uint16_t n1, uint16_t n2) {
 		//if (format[0] != '0') assert(n1 != NULL);
 		//if (format[2] != '0') assert(n2 != NULL);
@@ -1355,8 +910,6 @@ namespace CPU
 			char res1[9], res2[9];
 			convert_register(res1, n1);
 			convert_register(res2, n2);
-			//char res1[9] = convert_register(n1);
-			//char res2[9] = convert_register(n2);
 			strcpy(result + i + 1, res1);
 			while (result[i] != '\0') {
 				i++;
@@ -1365,8 +918,6 @@ namespace CPU
 			result[i] = ',';
 			result[i + 1] = ' ';
 			strcpy(result + i + 2, res2);
-			//free(res1);
-			//free(res2);
 		}
 		else if (format == "r,a") {
 			char res1[9], res2[15];
@@ -1379,8 +930,6 @@ namespace CPU
 			result[i] = ',';
 			result[i + 1] = ' ';
 			strcpy(result + i + 2, res2);
-			//free(res1);
-			//free(res2);
 		}
 		else if (format == "a,r") {
 			char res1[15], res2[9];
@@ -1393,8 +942,6 @@ namespace CPU
 			result[i] = ',';
 			result[i + 1] = ' ';
 			strcpy(result + i + 2, res2);
-			//free(res1);
-			//free(res2);
 		}
 		else if (format == "a,a") {
 			char res1[15], res2[15];
@@ -1408,20 +955,16 @@ namespace CPU
 			result[i] = ',';
 			result[i + 1] = ' ';
 			strcpy(result + i + 2, res2);
-			//free(res1);
-			//free(res2);
 		}
 		else if (format == "r,0") {
 			char res1[9];
 			convert_register(res1, n1);
 			strcpy(result + i + 1, res1);
-			//free(res1);
 		}
 		else if (format == "a,0") {
 			char res1[15];
 			convert_addr(res1, n1);
 			strcpy(result + i + 1, res1);
-			//free(res1);
 		}
 		else if (format == "0,0") {
 			result[i] = '\0';
@@ -1429,8 +972,6 @@ namespace CPU
 		else {
 			std::cout << "Invalid instruction format." << std::endl;
 		}
-
-		//return result;
 	}
 
 	void get_instruction_desc_from_value(char (&desc)[40], uint16_t instruction, bool short_desc) {
@@ -1710,17 +1251,7 @@ namespace CPU
 			}
 			break;
 		default:
-			// Unknown instruction
 			break;
 		}
-
-		/*
-		if (desc == nullptr) {
-			return "";
-		}
-		else {
-			return desc;
-		}
-		*/
 	}
 };

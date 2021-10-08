@@ -15,8 +15,6 @@ struct Colors {
 #pragma once
 namespace Graphics
 {
-	//uint32_t background = 0x2F7F82FF;
-	//uint32_t foreground = 0x184345FF;
 	uint32_t background = 0x000000FF;
 	uint32_t foreground = 0xFFFFFFFF;
 
@@ -26,20 +24,12 @@ namespace Graphics
 	float imBG[4] = { static_cast<float>(static_cast<uint8_t>(background >> 24) / 255), static_cast<float>(static_cast<uint8_t>(background >> 16) / 255), static_cast<float>(static_cast<uint8_t>(background >> 8) / 255), static_cast<float>(static_cast<uint8_t>(background) / 255) };
 	float imFG[4] = { static_cast<float>(static_cast<uint8_t>(foreground >> 24) / 255), static_cast<float>(static_cast<uint8_t>(foreground >> 16) / 255), static_cast<float>(static_cast<uint8_t>(foreground >> 8) / 255), static_cast<float>(static_cast<uint8_t>(foreground) / 255) };
 
-
-
-	//ImVec4 imBG = ImVec4(background >> 24, background >> 16, background >> 8, background);
-	//ImVec4 imFG = ImVec4(static_cast<uint8_t>(foreground >> 24), static_cast<uint8_t>(foreground >> 16), static_cast<uint8_t>(foreground >> 8), static_cast<uint8_t>(foreground));
-
-
 	uint32_t* pixels; // RGBA
 	uint32_t* copy_buffer;
 	uint32_t* original_pixels;
 
 	int avgFPS = 0;
 	int FPS = 60;
-	//std::chrono::duration<std::chrono::microseconds>(1000000 / Graphics::FPS)
-	//std::chrono::duration<double, std::micro> frameDelay (1000000 / Graphics::FPS);
 	uint32_t frameDelay = 1000 / Graphics::FPS;
 	const int horizontal_tiles = 64;
 	const int vertical_tiles = 32;
@@ -51,11 +41,6 @@ namespace Graphics
 
 	bool updating_colors = false;
 
-	//const float scale = 15.34567;
-
-	//int horizontal_scale = scale;
-	//int vertical_scale = scale;
-
 	int width = 1280;
 	int height = 720;
 
@@ -64,16 +49,6 @@ namespace Graphics
 
 	int tile_width = horizontal_scale;
 	int tile_height = vertical_scale;
-
-	//int tile_width = width / horizontal_tiles;
-	//int tile_height = height / vertical_tiles;
-
-	//const int horizontal_scale = width / horizontal_tiles;
-	//const int vertical_scale = height / vertical_tiles;
-
-	//const int width = horizontal_tiles * horizontal_scale;
-	//const int height = vertical_tiles * vertical_scale;
-
 
 	const char* title = "CHIP-8";
 
@@ -109,8 +84,6 @@ namespace Graphics
 	
 
 	void allocate_buffer() {
-		//pixels = (uint32_t*)malloc(width * height * sizeof(uint32_t));
-		//pixels = (uint32_t*) calloc(width * height, sizeof(uint32_t));
 		pixels = (uint32_t*) malloc(width * height * sizeof(uint32_t));
 		copy_buffer = (uint32_t*) malloc(width * height * sizeof(uint32_t));
 		original_pixels = (uint32_t*)malloc(horizontal_tiles * vertical_tiles * sizeof(uint32_t));
@@ -123,21 +96,6 @@ namespace Graphics
 
 			if (i < total_tiles) original_pixels[i] = background;
 		}
-
-		//memset(pixels, background, width * height * sizeof(uint32_t));
-		//memset(copy_buffer, pixels[0], width * height * sizeof(uint32_t));
-
-		/*
-		for (int i = 0; i < (width * height); i++) {
-			if (i < floor(width * height / 2)) {
-				pixels[i] = 0xFFFFFFFF;
-			}
-			else {
-				pixels[i] = 0x00000000;
-			}
-
-		}
-		*/
 	}
 
 	void free_buffer() {
@@ -157,9 +115,6 @@ namespace Graphics
 	}
 
 	bool initialize() {
-		//assert(width % horizontal_tiles == 0);
-		//assert(height % vertical_tiles == 0);
-
 		if (SDL_Init(SDL_INIT_VIDEO) != -1) {
 			std::cout << "Successfully initialized SDL video." << std::endl;
 		}
@@ -193,69 +148,6 @@ namespace Graphics
 				std::cout << "Could not find suitable audio device." << std::endl;
 			}
 
-			/*
-			target_spec.freq = sample_rate;
-			target_spec.format = AUDIO_F32LSB;
-			target_spec.channels = 1;
-			target_spec.samples = 2048;
-			target_spec.callback = audio_callback;
-			target_spec.userdata = &current_sample_number;
-
-			if (SDL_GetNumAudioDevices(false) > 0) {
-				deviceId = SDL_OpenAudioDevice(NULL, false, &target_spec, &current_spec, 0);
-
-				if (deviceId == 0) {
-					std::cout << "Could not initialize audio device. Error: " << SDL_GetError() << std::endl;
-					SDL_Quit();
-					return 0;
-				}
-
-				SDL_PauseAudioDevice(deviceId, false);
-				std::cout << "Successfully initialized audio device." << std::endl;
-			}
-			*/
-			/*
-			target_spec.freq = 64 * 60; // Sample rate
-			//target_spec.format = AUDIO_U8;
-			target_spec.format = AUDIO_F32LSB;
-			//target_spec.format = AUDIO_S16SYS;
-			target_spec.channels = 1;
-			target_spec.samples = 64; // Not sample rate
-			//target_spec.callback = audio_callback;
-			//target_spec.userdata = &current_sample_number;
-
-			
-
-			if (SDL_GetNumAudioDevices(false) > 0) {
-				deviceId = SDL_OpenAudioDevice(NULL, false, &target_spec, &current_spec, SDL_AUDIO_ALLOW_ANY_CHANGE);
-
-
-				if (deviceId == 0) {
-					std::cout << "Could not initialize audio device. Error: " << SDL_GetError() << std::endl;
-					SDL_Quit();
-					return 0;
-				}
-
-				SDL_PauseAudioDevice(deviceId, false);
-				std::cout << "Successfully initialized audio device." << std::endl;
-			}
-			else {
-				std::cout << "Could not find suitable audio device." << std::endl;
-				SDL_Quit();
-				return 0;
-			}
-
-			///*
-			if (target_spec.format != current_spec.format) {
-				std::cout << "Invalid target audio format. Error: " << SDL_GetError() << std::endl;
-				std::cout << "Spec format: " << current_spec.format;
-				SDL_Quit();
-				return 0;
-			}
-			//
-
-			*/
-
 			std::cout << "Successfully initialized SDL audio." << std::endl;
 		}
 		else {
@@ -267,8 +159,6 @@ namespace Graphics
 		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
 
 		window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI );
-		//window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
-
 
 		if (window != nullptr) {
 			std::cout << "Successfully initialized SDL window." << std::endl;
@@ -278,18 +168,6 @@ namespace Graphics
 			std::cout << "Could not initialize SDL window. Error: " << SDL_GetError() << std::endl;
 			return 0;
 		}
-
-		///*
-		//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-		//SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-
-		/*
-		SDL_GL_SetAttribute(
-			SDL_GL_CONTEXT_PROFILE_MASK,
-			SDL_GL_CONTEXT_PROFILE_CORE
-		);
-		*/
 
 		const char* glsl_version = "";
 #ifdef __APPLE__
@@ -352,59 +230,7 @@ namespace Graphics
 			std::cout << "Successfully initialized GLAD." << std::endl;
 		}
 
-		/*
-
-		glViewport(0, 0, width, height);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glOrtho(0, width, height, 0, -1.0, 1.0);
-		glClearColor(0, 0, 0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glShadeModel(GL_FLAT);
-
-		*/
-
-		/*
-		glEnable(GL_TEXTURE_2D);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DITHER);
-		glDisable(GL_BLEND);
-		*/
-
-		//SDL_GL_SetSwapInterval(0);
-
-		// VSync is enabled by default.
-
-		//SDL_GL_SetSwapInterval(0);
-
-
-		//SDL_GL_SetSwapInterval(0);
-		/*
-		if (SDL_GL_SetSwapInterval(1) < 0) {
-			std::cout << "Could not set VSync. Error: " << SDL_GetError() << std::endl;
-		} else {
-			std::cout << "Successfully enabled VSync." << std::endl;
-		}
-		*/
-
-
-
-		//SDL_GL_MakeCurrent(window, gl_context);
-
-		/*
-		glGenTextures(1, &textureId);
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, (GLvoid*)pixels);
-		*/
-
-		//glViewport(0, 0, width, height);
-		// colors are set in RGBA, but as float
-		ImVec4 background = ImVec4(140.f / 255, 27 / 255, 36 / 255, 0.3f);
+		ImVec4 background = ImVec4(140.f / 255, 27.f / 255, 36.f / 255, 0.3f);
 		glClearColor(background.x, background.y, background.z, background.w);
 
 		IMGUI_CHECKVERSION();
@@ -413,8 +239,6 @@ namespace Graphics
 
 		ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 		ImGui_ImplOpenGL3_Init(glsl_version);
-
-		///*
 
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE | SDL_RENDERER_PRESENTVSYNC);
 
@@ -434,12 +258,7 @@ namespace Graphics
 		uint8_t a = 255;
 		SDL_SetRenderDrawColor(Graphics::renderer, r, g, b, a);
 
-		//texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
 		texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, horizontal_tiles, vertical_tiles);
-		//SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-		//SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-		
-		//texture = SDL_CreateTexture(renderer, SDL_PixelFormatEnum::)
 
 		if (texture != nullptr) {
 			std::cout << "Successfully initialized SDL texture." << std::endl;
@@ -457,7 +276,6 @@ namespace Graphics
 		glGenRenderbuffers(1, &rbo);
 		glGenTextures(1, &textureFbo);
 
-		//*/
 		allocate_buffer();
 
 		std::cout << "Successfully initialized graphics module." << std::endl;
@@ -490,46 +308,9 @@ namespace Graphics
 	}
 
 	void clear_window() {
-		//for (int i = 0; i < width * height; i++) {
 		for (int i = 0; i < horizontal_tiles * vertical_tiles; i++) {
-			//copy_buffer[i] = pixels[i] = background;
-
-			if (i < vertical_tiles * horizontal_tiles) original_pixels[i] = background;
+			original_pixels[i] = background;
 		}
-
-		//memset(pixels, background, width * height * sizeof(uint32_t));
-		//glClear(GL_COLOR_BUFFER_BIT);
-		//memset(pixels, 0, width * height * sizeof(uint32_t));
-		/*
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-		SDL_RenderClear(renderer);
-		*/
-	}
-
-	void update_renderer() {
-		SDL_UpdateTexture(texture, nullptr, pixels, width * sizeof(uint32_t));
-		SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-		//SDL_RenderPresent(renderer);
-		//SDL_RenderFlush(renderer);
-
-		/*
-
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				if (pixels[y * width + x] != 0) {
-					printf("1");
-				}
-				else {
-					printf("0");
-				}
-			}
-
-			printf("\n");
-		}
-
-		printf("\n");
-
-		*/
 	}
 	
 	float convert_x(int x) {
@@ -556,23 +337,6 @@ namespace Graphics
 
 		float left_bottom_x = left_top_x;
 		float left_bottom_y = right_bottom_y;
-
-		/*
-
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		*/
-
-
-
-		//glClear(GL_COLOR_BUFFER_BIT);
-
-		//std::this_thread::sleep_for(std::chrono::seconds(5));
-
-
-		printf("(%.4f, %.4f)				(%.4f, %.4f)\n\n\n", left_top_x, left_top_y, right_top_x, right_top_y);
-		printf("(%.4f, %.4f)				(%.4f, %.4f)\n\n", left_bottom_x, left_bottom_y, right_bottom_x, right_bottom_y);
 
 
 
@@ -639,26 +403,6 @@ namespace Graphics
 		*/
 	}
 
-	void update() {
-		
-
-		//update_renderer();
-		
-		//glLoadIdentity();
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		//glLoadIdentity();
-		//glRasterPos2i(-1, 1);
-		//glPixelZoom(1, -1);
-
-		//glFlush();
-		//draw_new(0, 0);
-		/*
-		std::this_thread::sleep_for(std::chrono::seconds(5));
-		//SDL_GL_SwapWindow(window);
-		std::this_thread::sleep_for(std::::seconds(5));
-		*/
-	}
-
 
 	void fill_tile(int x, int y, uint32_t color) {
 		for (int newY = y; newY - y < tile_height; newY++) {
@@ -666,8 +410,6 @@ namespace Graphics
 				if (newY <= Graphics::height && newY >= 0 && newX <= Graphics::width && newX >= 0)	pixels[newY * width + newX] = color;
 			}
 		}
-
-		//draw_new(x, y);
 	}
 
 	void fill_tile(uint32_t* buffer, int width, int height, int x, int y, int tile_width, int tile_height, uint32_t color) {
@@ -676,8 +418,6 @@ namespace Graphics
 				if (newY <= height && newY >= 0 && newX <= width && newX >= 0) buffer[newY * width + newX] = color;
 			}
 		}
-
-		//draw_new(x, y);
 	}
 
 	void draw_sprite(uint8_t x, uint8_t y, uint8_t sprite_height, uint8_t* index_register, uint8_t* carry_flag) {
@@ -687,11 +427,6 @@ namespace Graphics
 		// At vertical coordinate VY
 		// All bits in the sprite that are 1 should flip (not operator) the pixels they correspond to
 		// If any of the pixels get turned off (0/black), VF (carry_flag) gets set to 1. Otherwise, it gets set to 0.
-		//x *= scale;
-		//y *= scale;
-
-		//x = (x > width) || (x < 0) ? x % width : x;
-		//y = (y > height) || (y < 0) ? y % height : y;
 
 		x = (x > horizontal_tiles) || (x < 0) ? x % horizontal_tiles : x;
 		y = (y > vertical_tiles) || (y < 0) ? y % vertical_tiles : y;
@@ -703,16 +438,6 @@ namespace Graphics
 		if (sprite_height > 0) {
 			uint8_t* bytes= (uint8_t*) malloc(sprite_height);
 			memcpy(bytes, index_register, sprite_height);
-
-			//printf("X: %d | Y: %d\n", x, y);
-
-			/*
-			for (int i = 0; i < width * height; i++) {
-				printf("%d: %d\n", i, pixels[i]);
-			}
-
-			printf("\n\n\n");
-			*/
 
 			for (uint8_t byte = 0; byte < sprite_height; byte++) {
 				uint8_t final_pixel_Y_coordinate;
@@ -734,25 +459,6 @@ namespace Graphics
 						final_pixel_X_coordinate = x + bit;
 					}
 
-
-					//printf("final_X: %d | final_Y: %d\n", final_pixel_X_coordinate, final_pixel_Y_coordinate);
-					//printf("final_X * vs: %d | final_Y * hz: %d\n", final_pixel_X_coordinate * horizontal_scale, final_pixel_Y_coordinate * vertical_scale);
-
-					/*
-
-					if (pixels[final_pixel_Y_coordinate * width + final_pixel_X_coordinate] == 0xFFFFFFFF) {
-						pixels[final_pixel_Y_coordinate * width + final_pixel_X_coordinate] = 0;
-						turned_off = true;
-					}
-					else if (pixels[final_pixel_Y_coordinate * width + final_pixel_X_coordinate] == 0x00000000) {
-						pixels[final_pixel_Y_coordinate * width + final_pixel_X_coordinate] = 0xFFFFFFFF;
-					}
-					else {
-						throw;
-					}
-
-					*/
-
 					if (current_bit && original_pixels[final_pixel_Y_coordinate * horizontal_tiles + final_pixel_X_coordinate] == background) {
 						//fill_tile(final_pixel_X_coordinate * horizontal_scale, final_pixel_Y_coordinate * vertical_scale, foreground);
 						original_pixels[final_pixel_Y_coordinate * horizontal_tiles + final_pixel_X_coordinate] = foreground;
@@ -772,11 +478,7 @@ namespace Graphics
 						turned_off = true;						
 					}
 					*/
-					
-					//printf("%d", current_bit);
 				}
-				
-				//printf("\n");
 			}
 
 			if (turned_off) {
@@ -785,35 +487,6 @@ namespace Graphics
 			else {
 				*carry_flag = 0;
 			}
-
-
-			
-			/*
-			for (int i = 0; i < width * height; i++) {
-				printf("%d: %d\n", i, pixels[i]);
-			}
-
-			*/
-
-			/*
-
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					if (pixels[y * width + x] != 0) {
-						printf("1");
-					}
-					else {
-						printf("0");
-					}
-				}
-
-				printf("\n");
-			}
-
-			printf("\n");
-
-			*/
-			
 
 			free(bytes);
 		}
@@ -865,13 +538,6 @@ namespace Graphics
 			}
 		}
 	}
-
-	/*
-	static SDL_Event* get_event() {
-		return &this->event;
-	}
-	*/
-
 
 	uint8_t scancode_to_hexa(SDL_Scancode code) {
 		switch (code) {

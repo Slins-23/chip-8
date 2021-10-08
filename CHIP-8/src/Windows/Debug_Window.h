@@ -58,20 +58,6 @@ namespace Debug_Window {
 			}
 		}
 
-		/*
-		if (CPU::status == Status::stopped) {
-			ImGui::BeginDisabled();
-			ImGui::Button("Pause (P / Space)", debugBtnSize);
-			ImGui::EndDisabled();
-		}
-		else if (CPU::status == Status::running) {
-			if (ImGui::Button("Pause (P / Space)", debugBtnSize)) CPU::status = Status::paused;
-		}
-		else if (CPU::status == Status::paused) {
-			if (ImGui::Button("Resume (P / Space)", debugBtnSize)) CPU::status = Status::running;
-		}
-		*/
-
 		if (CPU::status == Status::stopped) {
 			ImGui::BeginDisabled();
 			ImGui::Button("Reload ROM", debugBtnSize);
@@ -87,8 +73,6 @@ namespace Debug_Window {
 				CPU::reset();
 			}
 		}
-
-
 
 		ImGui::Text("Status: ");
 		ImGui::SameLine();
@@ -196,26 +180,6 @@ namespace Debug_Window {
 					CPU::instructions_per_sound_decrement = 0;
 				}
 
-
-				/*
-				if (Graphics::FPS < 60 && CPU::current_framerate >= Graphics::FPS) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / Graphics::FPS;
-				}
-				else if (Graphics::FPS < 60 && CPU::current_framerate < Graphics::FPS) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / CPU::current_framerate;
-				}
-				else if (Graphics::FPS >= 60 && CPU::current_framerate >= Graphics::FPS) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / 60;
-				}
-				else if (Graphics::FPS >= 60 && CPU::current_framerate < Graphics::FPS && CPU::current_framerate > 60) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / 60;
-				}
-				else if (Graphics::FPS >= 60 && CPU::current_framerate < Graphics::FPS && CPU::current_framerate <= 60) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / CPU::current_framerate;
-				}
-				*/
-
-
 			}
 
 
@@ -232,21 +196,6 @@ namespace Debug_Window {
 
 			if (!CPU::delayIsZero) {
 				CPU::instructions_per_delay_decrement = round((double)CPU::instructionsPerSecond / CPU::delayDecPerSec);
-
-				/*
-				//float framerate_current = ImGui::GetIO().Framerate;
-				if (CPU::current_framerate < Graphics::FPS && Graphics::FPS > 0) {
-					//CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / ImGui::GetIO().Framerate;
-					CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / CPU::current_framerate;
-				}
-				else if (Graphics::FPS > 0 && CPU::current_framerate >= 60) {
-					//CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / Graphics::FPS;
-					CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / 60;
-				}
-				else {
-					CPU::delay_decrement_per_frame = 0;
-				}
-				*/
 
 				if (Graphics::FPS > 0) {
 					if (Graphics::FPS < 60) {
@@ -270,20 +219,6 @@ namespace Debug_Window {
 
 			if (!CPU::soundIsZero) {
 				CPU::instructions_per_sound_decrement = round((double)CPU::instructionsPerSecond / CPU::soundDecPerSec);
-
-				//float framerate_current = ImGui::GetIO().Framerate;
-				/*
-				if (CPU::current_framerate < Graphics::FPS && Graphics::FPS > 0) {
-					CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / CPU::current_framerate;
-				}
-				else if (CPU::current_framerate >= Graphics::FPS && Graphics::FPS > 0) {
-					//CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / Graphics::FPS;
-					CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / 60;
-				}
-				else {
-					CPU::sound_decrement_per_frame = 0;
-				}
-				*/
 				if (Graphics::FPS > 0) {
 					if (Graphics::FPS < 60) {
 						CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / std::min((float)Graphics::FPS, CPU::current_framerate);
@@ -312,23 +247,7 @@ namespace Debug_Window {
 		if (ImGui::InputInt("##FPS", &Graphics::FPS, 0)) {
 			if (Graphics::FPS < 0) Graphics::FPS = abs(Graphics::FPS);
 			if (Graphics::FPS > 0) {
-
-				//Graphics::frameDelay = std::chrono::duration<double, std::micro>(1000000 / Graphics::FPS);
 				Graphics::frameDelay = 1000 / Graphics::FPS;
-
-				//printf("Framerate: %f | FPS: %d\n", framerate, Graphics::FPS);
-
-
-				// 600 | 700 -> ok
-				// 600 | 400 -> ok
-				// 600 | 30 -> ok
-
-				// 60 | 80 -> ok
-				// 60 | 40 -> ok
-
-				// 30 | 40 -> ok
-				// 30 | 15 -> t
-
 
 				if (Graphics::FPS < 60) {
 					CPU::instructions_per_frame = CPU::instructionsPerSecond / std::min((float)Graphics::FPS, CPU::current_framerate);
@@ -371,12 +290,6 @@ namespace Debug_Window {
 			uint32_t tmp = static_cast<uint8_t>(Graphics::imBG[0] * 255) << 24 | static_cast<uint8_t>(Graphics::imBG[1] * 255) << 16 | static_cast<uint8_t>(Graphics::imBG[2] * 255) << 8 | static_cast<uint8_t>(Graphics::imBG[3] * 255);
 			if (tmp != Graphics::foreground)  Graphics::background = tmp;
 		}
-		//ImGui::SameLine();
-		/*
-		if (ImGui::ColorButton("#BGC", Graphics::imBG, NULL)) {
-			Graphics::background =(static_cast<uint8_t>(Graphics::imBG.x) << 24) | (static_cast<uint8_t>(Graphics::imBG.y) << 16) | (static_cast<uint8_t>(Graphics::imBG.z) << 8) | (static_cast<uint8_t>(Graphics::imBG.w));
-		}
-		*/
 
 		ImGui::Text("FG Color: ");
 
@@ -387,22 +300,8 @@ namespace Debug_Window {
 			if (tmp != Graphics::background) Graphics::foreground = tmp;
 		}
 
-
-
-
-
-		/*
-		if (ImGui::ColorButton("#FGC", Graphics::imFG, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_PickerHueWheel)) {
-			Graphics::foreground = (static_cast<uint8_t>(Graphics::imFG.x) << 24) | (static_cast<uint8_t>(Graphics::imFG.y) << 16) | (static_cast<uint8_t>(Graphics::imFG.z) << 8) | (static_cast<uint8_t>(Graphics::imFG.w));
-		}
-		*/
-
 		if (ImGui::Button("Toggle Debug (H)", debugBtnSize)) {
 			Graphics::render_windows ^= 1;
-
-			if (Graphics::render_windows) {
-				//SDL_RenderClear(Graphics::renderer);
-			}
 		}
 
 		ImGui::Separator();

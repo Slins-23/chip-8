@@ -16,6 +16,7 @@ char _dig_vec_upper[] =
 char _dig_vec_lower[] =
 "0123456789abcdefghijklmnopqrstuvwxyz";
 
+// Using this custom function for the decimal -> hexadecimal conversion, as "itoa" which was previously used is not cross-platform and used strings instead of character arrays. Sprintf is slightly slower for values less than 4096 (0x200), int2str is slower for values (~10 times) greater than that, and it keeps getting slower proportionately to the value.
 // From https://github.com/mysql/mysql-server/blob/5.7/strings/int2str.c
 char* int2str(long int val, char* dst, int radix, int upcase) {
 	char buffer[65];
@@ -67,18 +68,6 @@ char* int2str(long int val, char* dst, int radix, int upcase) {
 	return dst - 1;
 }
 
-class Node {
-private:
-public:
-	uint16_t address = NULL;
-	Node* next = nullptr;
-
-	Node() {};
-	~Node() {
-	};
-
-};
-
 const uint8_t font[] = {
 	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 	0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -107,7 +96,6 @@ namespace RAM {
 	const char* ROMS_FOLDER = "B:\\Programming\\C++\\CHIP-8\\CHIP-8\\ROMS\\";
 	char rom_path[261];
 	char rom_title[261];
-	//size_t totalSpaceInBytes = 4096;
 	uint8_t* buffer;
 	uint8_t* rom_data = nullptr;
 	uint16_t rom_size;
@@ -116,20 +104,8 @@ namespace RAM {
 	uint16_t* sp;
 	uint16_t* sp_addr;
 	int bytes_per_row = 16;
-	//Stack* stack;
-
-	// Stack pointer?
 
 	void print() {
-		/*
-		for (int i = 0; i < totalSpaceInBytes / sizeof(uint16_t); i++) {
-			char str[16];
-			_itoa_s(i, str, 16);
-
-			std::cout << "Buffer " << i << " (0x" << str << "): " << this->buffer[i] << std::endl;
-		}
-		*/
-
 		for (int i = 0; i < totalSpaceInBytes; i++) {
 			if (i > 511 && i < 4095) {
 				char current_addr[5], current_byte[3], next_byte[3];
@@ -185,19 +161,10 @@ namespace RAM {
 	}
 
 	void load_rom(char* path) {
-		//const char* ROM = "logo.ch8";
-		//const char* ROM = "bc_test.ch8";
-		//const char* ROM = "test_opcode.ch8";
-		//const char* ROM = "pong.ch8";
+
 		memset(buffer + interpreterSpaceInBytes, 0x00, romSpaceInBytes);
 
-		//const char* ROM = "Space Invaders [David Winter].ch8";
-		//char* path = (char*) malloc(500);
-		//strcpy_s(path, 500, ROMS_FOLDER);
-		//strcat_s(path, 500, ROM);
-
 		std::string str_path = path;
-
 		strcpy(rom_path, path);
 
 		// Paths on Windows and Unix systems are not the same: Directory separator in Windows is a backslash '\', on Unix it's a forwardslash '/'.
@@ -207,12 +174,7 @@ namespace RAM {
 		strcpy(rom_title, str_path.substr(str_path.find_last_of("/") + 1).c_str());
 #endif
 
-		
-		//strcpy_s(rom_title, 261, ROM);
 
-		//const char* path = "ROMS/bc_test.ch8";
-		//const char* path = "ROMS/test_opcode.ch8";
-		//const char* path = "ROMS/Space Invaders [David Winter].ch8";
 		struct stat results;
 
 		if (stat(path, &results) == 0) {
@@ -238,39 +200,8 @@ namespace RAM {
 			throw;
 		};
 
-		//uint16_t* byte_data2 = (uint16_t*)byte_data;
-
-		//char* nt = (char*)byte_data2;
-
-		/*
-
-		for (int i = 0; i < results.st_size; i++) {
-			char val[9];
-			char addr[3];
-			_itoa_s(i, addr, 16);
-			_itoa_s(nt[i], val, 16);
-
-			std::cout << "Address (0x" << addr << "): " << val << std::endl;
-		}
-
-		*/
-
-		/*
-
-		for (int i = 0; i < results.st_size / sizeof(uint16_t); i++) {
-			char val[9];
-			char addr[3];
-			_itoa_s(i, addr, 16);
-			_itoa_s(byte_data2[i], val, 16);
-
-			std::cout << "Address (0x" << addr << "): " << val << std::endl;
-		}
-		*/
-
 		memcpy(buffer + interpreterSpaceInBytes, rom_data, rom_size);
 		free(path);
-		//print();
-		//exit(-1);
 	}
 
 	bool initialize() {
@@ -280,42 +211,6 @@ namespace RAM {
 		memcpy(buffer, font, sizeof(font));
 		memset(buffer + sizeof(font), 0xFF, interpreterSpaceInBytes - sizeof(font));
 		memset(buffer + interpreterSpaceInBytes, 0x00, romSpaceInBytes);
-
-		/*
-		for (int i = 0; i < totalSpaceInBytes; i++) {
-			
-			if (i <= this->interpreterSpaceInBytes) {
-				this->buffer[i] = (uint16_t) 0xAFF; // CPU Interpreter reserved
-			}
-			else {
-				this->buffer[i] = (uint16_t) 0xFFA; // ROM reserved
-			}
-			
-
-			//if (i < sizeof(font)) {
-			
-			if (i < fontSpaceInBytes / sizeof(uint16_t)) {
-				buffer[i] = font[i];
-			}
-			else if (i < interpreterSpaceInBytes / sizeof(uint16_t)) {
-				buffer[i] = 0xFF;
-			}
-			else { // Where programs load. Or 0x600 (ETI 660)
-				buffer[i] = 0x00;
-			}
-		
-		}
-
-		*/
-
-
-
-		//memcpy(this->buffer + (this->interpreterSpaceInBytes / sizeof(uint16_t)), stack, 32);
-		//stack = new Stack();
-		// Copies font bytes to address range 000-050 of buffer
-		//memcpy(this->buffer, font, sizeof(font));
-
-		//load_rom();
 		return 1;
 	}
 
