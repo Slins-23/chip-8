@@ -112,9 +112,6 @@ namespace RAM {
 				int2str(i, current_addr, 16, 1);
 				int2str(buffer[i], current_byte, 16, 1);
 				int2str(buffer[i + 1], next_byte, 16, 1);
-				//_itoa_s(i, current_addr, 16);
-				//_itoa_s(buffer[i], current_byte, 16);
-				//_itoa_s(buffer[i + 1], next_byte, 16);
 
 				if (buffer[i] < 16) {
 					current_byte[1] = current_byte[0];
@@ -129,9 +126,6 @@ namespace RAM {
 				}
 
 				char new_str[5];
-				//memcpy(new_str, current_byte, 2);
-				//memcpy(new_str + 2, next_byte, 3);
-				// Endianness
 
 				int q = 0;
 				for (q; q < 3; q++) {
@@ -153,8 +147,6 @@ namespace RAM {
 				char str[4], str2[3];
 				int2str(i, str, 16, 1);
 				int2str(buffer[i], str2, 16, 1);
-				//_itoa_s(i, str, 16);
-				//_itoa_s(buffer[i], str2, 16);
 				std::cout << "Buffer " << i << " (0x" << str << "): " << str2 << std::endl;
 			}
 		}
@@ -212,6 +204,12 @@ namespace RAM {
 		memset(buffer + sizeof(font), 0xFF, interpreterSpaceInBytes - sizeof(font));
 		memset(buffer + interpreterSpaceInBytes, 0x00, romSpaceInBytes);
 		return 1;
+	}
+
+	void clear_stack() {
+		for (int i = 0; i < RAM::stack_size; i++) {
+			RAM::sp_addr[i] = 0;
+		}
 	}
 
 	void close() {

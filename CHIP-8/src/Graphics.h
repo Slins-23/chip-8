@@ -24,8 +24,6 @@ namespace Graphics
 	float imBG[4] = { static_cast<float>(static_cast<uint8_t>(background >> 24) / 255), static_cast<float>(static_cast<uint8_t>(background >> 16) / 255), static_cast<float>(static_cast<uint8_t>(background >> 8) / 255), static_cast<float>(static_cast<uint8_t>(background) / 255) };
 	float imFG[4] = { static_cast<float>(static_cast<uint8_t>(foreground >> 24) / 255), static_cast<float>(static_cast<uint8_t>(foreground >> 16) / 255), static_cast<float>(static_cast<uint8_t>(foreground >> 8) / 255), static_cast<float>(static_cast<uint8_t>(foreground) / 255) };
 
-	uint32_t* pixels; // RGBA
-	uint32_t* copy_buffer;
 	uint32_t* original_pixels;
 
 	int avgFPS = 0;
@@ -84,29 +82,21 @@ namespace Graphics
 	
 
 	void allocate_buffer() {
-		pixels = (uint32_t*) malloc(width * height * sizeof(uint32_t));
-		copy_buffer = (uint32_t*) malloc(width * height * sizeof(uint32_t));
 		original_pixels = (uint32_t*)malloc(horizontal_tiles * vertical_tiles * sizeof(uint32_t));
 
 
 		int total_tiles = horizontal_tiles * vertical_tiles;
-		for (int i = 0; i < width * height; i++) {
-			pixels[i] = background;
-			copy_buffer[i] = pixels[i];
-
-			if (i < total_tiles) original_pixels[i] = background;
+		for (int i = 0; i < horizontal_tiles * vertical_tiles; i++) {
+			original_pixels[i] = background;
 		}
 	}
 
 	void free_buffer() {
-		free(copy_buffer);
-		free(pixels);
 		free(original_pixels);
 	}
 
 	void audio_callback(void* data, Uint8* buffer, int length)
 	{
-
 		for (int i = 0; i < length; i++)
 		{
 			buffer[i] = (std::sin(current_sample / samples_per_sine * M_PI * 2) + 1) * 127.5;
@@ -325,93 +315,6 @@ namespace Graphics
 		return (num <= -1 || num >= 1);
 	}
 
-	void draw_new(int x, int y) {
-		float left_top_x = convert_x(x);
-		float left_top_y = convert_y(y);
-
-		float right_top_x = convert_x(x + tile_width);
-		float right_top_y = left_top_y;
-
-		float right_bottom_x = right_top_x;
-		float right_bottom_y = convert_y(y + tile_height);
-
-		float left_bottom_x = left_top_x;
-		float left_bottom_y = right_bottom_y;
-
-
-
-		/*
-		if (is_wrong(left_top_x) || is_wrong(left_top_y) || is_wrong(right_top_x) || is_wrong(right_top_y) || is_wrong(right_bottom_x) || is_wrong(right_bottom_y) || is_wrong(left_bottom_x) || is_wrong(left_bottom_y)) {
-			exit(-1);
-		}
-
-		*/
-
-		//glClearColor(1.f, 1.f, 0.f, 1.f);
-		//glClear(GL_COLOR_BUFFER_BIT);
-
-		/*
-
-		glBegin(GL_QUADS);
-		glVertex2f(left_top_x, left_top_y);
-		glVertex2f(right_top_x, right_top_y);
-		glVertex2f(right_bottom_x, right_bottom_y);
-		glVertex2f(left_bottom_x, left_bottom_y);
-		glEnd();
-
-
-		*/
-
-		/*
-
-		std::this_thread::sleep_for(std::chrono::seconds(15));
-
-		glBegin(GL_QUADS);
-		glVertex2f(-0.5f, -0.5f);
-		glVertex2f(0.5f, -0.5f);
-		glVertex2f(0.5f, 0.5f);
-		glVertex2f(-0.5f, 0.5f);
-		glEnd();
-
-		*/
-
-		/*
-
-		for (int y = 0; y <= height - tile_height; y += tile_height) {
-			for (int x = 0; x <= width - tile_width; x += tile_width) {
-				int left_top_x = x;
-				int left_top_y = y;
-
-				int right_top_x = left_top_x + tile_width;
-				int right_top_y = left_top_y;
-
-				int right_bottom_x = right_top_x;
-				int right_bottom_y = right_top_y + tile_height;
-
-				int left_bottom_x = left_top_x;
-				int left_bottom_y = left_top_y + tile_height;
-
-				glBegin(GL_QUADS);
-				glVertex2f(convert_x(left_top_x), convert_y(left_top_y));
-				glVertex2f(convert_x(right_top_x), convert_y(right_top_y));
-				glVertex2f(convert_x(right_bottom_x), convert_y(right_bottom_y));
-				glVertex2f(convert_x(left_top_x), convert_y(left_bottom_y));
-				glEnd();
-			}
-		}d
-
-		*/
-	}
-
-
-	void fill_tile(int x, int y, uint32_t color) {
-		for (int newY = y; newY - y < tile_height; newY++) {
-			for (int newX = x; newX - x < tile_width; newX++) {
-				if (newY <= Graphics::height && newY >= 0 && newX <= Graphics::width && newX >= 0)	pixels[newY * width + newX] = color;
-			}
-		}
-	}
-
 	void fill_tile(uint32_t* buffer, int width, int height, int x, int y, int tile_width, int tile_height, uint32_t color) {
 		for (int newY = y; newY - y < tile_height; newY++) {
 			for (int newX = x; newX - x < tile_width; newX++) {
@@ -430,9 +333,6 @@ namespace Graphics
 
 		x = (x > horizontal_tiles) || (x < 0) ? x % horizontal_tiles : x;
 		y = (y > vertical_tiles) || (y < 0) ? y % vertical_tiles : y;
-
-		//printf("X: %d | Y: %d | H: %d\n", x, y, sprite_height);
-
 		bool turned_off = false;
 
 		if (sprite_height > 0) {
@@ -460,24 +360,12 @@ namespace Graphics
 					}
 
 					if (current_bit && original_pixels[final_pixel_Y_coordinate * horizontal_tiles + final_pixel_X_coordinate] == background) {
-						//fill_tile(final_pixel_X_coordinate * horizontal_scale, final_pixel_Y_coordinate * vertical_scale, foreground);
 						original_pixels[final_pixel_Y_coordinate * horizontal_tiles + final_pixel_X_coordinate] = foreground;
 					}
 					else if (current_bit && original_pixels[final_pixel_Y_coordinate * horizontal_tiles + final_pixel_X_coordinate] == foreground) {
-						//fill_tile(final_pixel_X_coordinate * horizontal_scale, final_pixel_Y_coordinate * vertical_scale, background);
 						original_pixels[final_pixel_Y_coordinate * horizontal_tiles + final_pixel_X_coordinate] = background;
 						turned_off = true;
 					}
-					
-					/*
-					if (current_bit && pixels[final_pixel_Y_coordinate * vertical_scale * width + final_pixel_X_coordinate * horizontal_scale] == background) {
-						fill_tile(final_pixel_X_coordinate * horizontal_scale, final_pixel_Y_coordinate * vertical_scale, foreground);
-					}
-					else if (current_bit && pixels[final_pixel_Y_coordinate * vertical_scale * width + final_pixel_X_coordinate * horizontal_scale] == foreground) {
-						fill_tile(final_pixel_X_coordinate * horizontal_scale, final_pixel_Y_coordinate * vertical_scale, background);
-						turned_off = true;						
-					}
-					*/
 				}
 			}
 
@@ -492,7 +380,7 @@ namespace Graphics
 		}
 	}
 
-	void draw_top(int x, int y) {
+	void draw_top(uint32_t* pixels, int x, int y) {
 		if (x < 0 || x >= Graphics::width || y < 0 || y >= Graphics::height) return;
 
 		for (int newX = x; (newX - x) < tile_width; newX++) {
@@ -500,7 +388,7 @@ namespace Graphics
 		}
 	}
 
-	void draw_left(int x, int y) {
+	void draw_left(uint32_t* pixels, int x, int y) {
 		if (x < 0 || x >= Graphics::width || y < 0 || y >= Graphics::height) return;
 
 		for (int newY = y; (newY - y) < tile_height; newY++) {
@@ -508,7 +396,7 @@ namespace Graphics
 		}
 	}
 
-	void draw_bottom(int x, int y) {
+	void draw_bottom(uint32_t* pixels, int x, int y) {
 		int newY = y + (tile_height - 1);
 		if (x < 0 || x >= Graphics::width || newY < 0 || newY >= Graphics::height) return;
 		
@@ -517,7 +405,7 @@ namespace Graphics
 		}
 	}
 
-	void draw_right(int x, int y) {
+	void draw_right(uint32_t* pixels, int x, int y) {
 		int newX = x + (tile_width - 1);
 		if (newX < 0 || newX >= Graphics::width || y < 0 || y >= Graphics::height) return;
 
@@ -526,6 +414,7 @@ namespace Graphics
 		}
 	}
 
+	/*
 	void draw_tiles() {
 		memcpy(copy_buffer, pixels, width * height * sizeof(uint32_t));
 
@@ -538,6 +427,7 @@ namespace Graphics
 			}
 		}
 	}
+	*/
 
 	uint8_t scancode_to_hexa(SDL_Scancode code) {
 		switch (code) {
@@ -619,16 +509,18 @@ namespace Graphics
 		}
 	}
 
-	void handle_key(uint8_t key) {
-		//send_key_press_to_stack(key);
-	}
+	void update_texture() {
+		// Binds the texture
+		glBindTexture(GL_TEXTURE_2D, Graphics::textureFbo);
 
-	void print() {
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				std::cout << "(" << x << ", " << y << "): " << pixels[y * width + x] << std::endl;
-			}
-		}
+		// Necessary otherwise doesn't show anything
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		// Updates bound texture with the "original_pixels" buffer stored in the Graphics file
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 32, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, Graphics::original_pixels);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 };
 

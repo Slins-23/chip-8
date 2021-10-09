@@ -11,18 +11,14 @@ namespace Debug_Window {
 	int step = 10;
 	int skip = 10;
 
-	ImVec2 debugBtnSize = ImVec2(Graphics::width * debugW_factor * 0.83, 0);
-
 	void draw_debug() {
 		ImGui::SetNextWindowPos(ImVec2(Graphics::width * ROM_Window::romW_factor, 0), ImGuiCond_Always);
 		ImGui::SetNextWindowSize(ImVec2(Graphics::width * Debug_Window::debugW_factor, Graphics::height * Debug_Window::debugH_factor));
 		ImGui::Begin("Debug", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar);
-		//debugBtnSize = ImVec2(Graphics::width * Windows::debugW_factor - 35, 0);
-		debugBtnSize = ImVec2(ImGui::GetContentRegionAvail().x, 0);
+		ImVec2 debugBtnSize = ImVec2(ImGui::GetContentRegionAvail().x, 0);
 
 		if (ImGui::Button("Load ROM", debugBtnSize)) {
 			static const nfdchar_t* filters = "ch8";
-			//nfdresult_t result = NFD_OpenDialog(&path, filters, 1, NULL);
 			nfdresult_t result = NFD_OpenDialog(filters, nullptr, &path);
 
 			if (result == NFD_OKAY) {
@@ -152,6 +148,22 @@ namespace Debug_Window {
 			if (Graphics::FPS > 0) {
 				if (CPU::instructionsPerSecond < 0) CPU::instructionsPerSecond = abs(CPU::instructionsPerSecond);
 
+				CPU::instructions_per_frame = (double)CPU::instructionsPerSecond / CPU::current_framerate;
+
+				if (CPU::delayDecPerSec > 0) {
+					CPU::instructions_per_delay_decrement = (double)CPU::instructionsPerSecond / CPU::delayDecPerSec;
+				}
+				else {
+					CPU::instructions_per_delay_decrement = 0;
+				}
+
+				if (CPU::soundDecPerSec > 0) {
+					CPU::instructions_per_sound_decrement = (double)CPU::instructionsPerSecond / CPU::soundDecPerSec;
+				}
+				else {
+					CPU::instructions_per_sound_decrement = 0;
+				}
+
 				// 50 | 65 -> 50
 				// 50 | 40 -> 40
 
@@ -159,26 +171,29 @@ namespace Debug_Window {
 
 				// 70 | 65 -> 60
 				// 70 | 40 -> 40
+
+				/*
 				if (Graphics::FPS < 60) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / std::min((float)Graphics::FPS, CPU::current_framerate);
+					CPU::instructions_per_frame = (double) CPU::instructionsPerSecond / std::min((float)Graphics::FPS, CPU::current_framerate);
 				}
 				else {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / std::min(CPU::current_framerate, 60.f);
+					CPU::instructions_per_frame = (double) CPU::instructionsPerSecond / std::min(CPU::current_framerate, 60.f);
 				}
 
 				if (CPU::delayDecPerSec > 0) {
-					CPU::instructions_per_delay_decrement = CPU::instructionsPerSecond / CPU::delayDecPerSec;
+					CPU::instructions_per_delay_decrement = (double)CPU::instructionsPerSecond / CPU::delayDecPerSec;
 				}
 				else {
 					CPU::instructions_per_delay_decrement = 0;
 				}
 
 				if (CPU::soundDecPerSec > 0) {
-					CPU::instructions_per_sound_decrement = CPU::instructionsPerSecond / CPU::soundDecPerSec;
+					CPU::instructions_per_sound_decrement = (double)CPU::instructionsPerSecond / CPU::soundDecPerSec;
 				}
 				else {
 					CPU::instructions_per_sound_decrement = 0;
 				}
+				*/
 
 			}
 
@@ -192,18 +207,19 @@ namespace Debug_Window {
 
 		if (ImGui::InputInt("##Delay", &CPU::delayDecPerSec, 0)) {
 			if (CPU::delayDecPerSec < 0) CPU::delayDecPerSec = abs(CPU::delayDecPerSec);
-			CPU::delayIsZero = (CPU::delayDecPerSec == 0 ? true : false);
-
-			if (!CPU::delayIsZero) {
-				CPU::instructions_per_delay_decrement = round((double)CPU::instructionsPerSecond / CPU::delayDecPerSec);
+			if (CPU::delayDecPerSec > 0) {
+				CPU::instructions_per_delay_decrement = (double)CPU::instructionsPerSecond / CPU::delayDecPerSec;
 
 				if (Graphics::FPS > 0) {
+					CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / CPU::current_framerate;
+					/*
 					if (Graphics::FPS < 60) {
 						CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / std::min((float)Graphics::FPS, CPU::current_framerate);
 					}
 					else {
 						CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / std::min(CPU::current_framerate, 60.f);
 					}
+					*/
 				}
 
 			}
@@ -215,17 +231,18 @@ namespace Debug_Window {
 		ImGui::PushItemWidth(30);
 		if (ImGui::InputInt("##Sound", &CPU::soundDecPerSec, 0)) {
 			if (CPU::soundDecPerSec < 0) CPU::soundDecPerSec = abs(CPU::soundDecPerSec);
-			CPU::soundIsZero = (CPU::soundDecPerSec == 0 ? true : false);
-
-			if (!CPU::soundIsZero) {
-				CPU::instructions_per_sound_decrement = round((double)CPU::instructionsPerSecond / CPU::soundDecPerSec);
+			if (CPU::soundDecPerSec > 0) {
+				CPU::instructions_per_sound_decrement = (double)CPU::instructionsPerSecond / CPU::soundDecPerSec;
 				if (Graphics::FPS > 0) {
+					CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / CPU::current_framerate;
+					/*
 					if (Graphics::FPS < 60) {
 						CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / std::min((float)Graphics::FPS, CPU::current_framerate);
 					}
 					else {
 						CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / std::min(CPU::current_framerate, 60.f);
 					}
+					*/
 				}
 
 			}
@@ -248,17 +265,21 @@ namespace Debug_Window {
 			if (Graphics::FPS < 0) Graphics::FPS = abs(Graphics::FPS);
 			if (Graphics::FPS > 0) {
 				Graphics::frameDelay = 1000 / Graphics::FPS;
-
+				CPU::instructions_per_frame = (double)CPU::instructionsPerSecond / CPU::current_framerate;
+				CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / CPU::current_framerate;
+				CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / CPU::current_framerate;
+				/*
 				if (Graphics::FPS < 60) {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / std::min((float)Graphics::FPS, CPU::current_framerate);
+					CPU::instructions_per_frame = (double) CPU::instructionsPerSecond / std::min((float)Graphics::FPS, CPU::current_framerate);
 					CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / std::min((float)Graphics::FPS, CPU::current_framerate);
 					CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / std::min((float)Graphics::FPS, CPU::current_framerate);
 				}
 				else {
-					CPU::instructions_per_frame = CPU::instructionsPerSecond / std::min(60.f, CPU::current_framerate);
+					CPU::instructions_per_frame = (double) CPU::instructionsPerSecond / std::min(60.f, CPU::current_framerate);
 					CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / std::min(60.f, CPU::current_framerate);
 					CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / std::min(60.f, CPU::current_framerate);
 				}
+				*/
 
 
 			}
@@ -328,11 +349,9 @@ namespace Debug_Window {
 
 			CPU::delayDecPerSec = CPU::soundDecPerSec = 60;
 			CPU::instructionsPerSecond = 700;
-			CPU::millisecondsPerInstruction = 1000 / CPU::instructionsPerSecond;
-			CPU::instructions_per_delay_decrement = round((double)CPU::instructionsPerSecond / CPU::delayDecPerSec);
-			CPU::instructions_per_sound_decrement = round((double)CPU::instructionsPerSecond / CPU::soundDecPerSec);
-			CPU::delayIsZero = CPU::soundIsZero = false;
-			CPU::instructions_per_frame = CPU::instructionsPerSecond / Graphics::FPS;
+			CPU::instructions_per_delay_decrement = (double)CPU::instructionsPerSecond / CPU::delayDecPerSec;
+			CPU::instructions_per_sound_decrement = (double)CPU::instructionsPerSecond / CPU::soundDecPerSec;
+			CPU::instructions_per_frame = (double) CPU::instructionsPerSecond / Graphics::FPS;
 			CPU::delay_decrement_per_frame = (double)CPU::delayDecPerSec / Graphics::FPS;
 			CPU::sound_decrement_per_frame = (double)CPU::soundDecPerSec / Graphics::FPS;
 			Graphics::frameDelay = 1000 / Graphics::FPS;

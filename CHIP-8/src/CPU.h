@@ -8,15 +8,9 @@
 #include <charconv>
 #include <stdio.h>
 
-std::string hex_to_decstr(std::string hex_val) {
-	std::stringstream ss;
-	ss << std::hex << hex_val;
-
-	return ss.str();
-}
-
 #pragma once
 
+// All registers
 struct Registers {
 	uint8_t V0 = NULL;
 	uint8_t V1 = NULL;
@@ -37,6 +31,7 @@ struct Registers {
 	uint16_t I = NULL; // Index register
 };
 
+// Each keypad key
 struct Keys {
 	uint8_t K1 = 0x1; // 1
 	uint8_t K2 = 0x2; // 2
@@ -56,117 +51,180 @@ struct Keys {
 	uint8_t K16 = 0xF; // V
 };
 
-enum Status {
+// Status of the emulator: 
+// Stopped - Emulator just started, ROM is loaded but hasn't been started yet or "Reset ROM" button was pressed.
+// Running - ROM has been loaded and "Start ROM", "Reload ROM", "Resume" button or equivalent bound key was pressed.
+// Paused - Was previously running, but "Pause" button or equivalent bound key was pressed.
+enum class Status {
 	stopped,
 	running,
 	paused
 };
 
-enum Implementation {
+// Which implementation of CHIP-8 does is emulator trying to emulate.
+// Setting affects mostly specific instructions which are implementation dependant.
+// "Optimal" is the behavior I relied upon to make the emulator.
+// "Custom" is the custom behavior manually defined by the user, without emulating any one specific CHIP-8 implementation.
+// * Currently should be left as "Optimal". Something for the future at the moment.
+enum class Implementation {
 	Optimal,
 	Cosmac_VIP,
 	Chip_48,
 	Super_Chip,
 	Amiga,
+	Custom,
 };
 
 #pragma once
 namespace CPU
 {
-	uint8_t* pc = nullptr;
-	uint8_t delay = 0x00;
+	// Program Counter - Tracks which address/instruction is being accessed at the moment.
+	uint8_t* pc = nullptr; 
+
+	// Delay timer - In the default settings is decremented 60 times every second (or once every ~16.6667 ms).
+	uint8_t delay = 0x00; 
+
+	// Sound timer - In the default settings is decremented 60 times every second (or once every ~16.6667 ms). 
+	// Plays a beep sound whenever it's not 0. 
+	// The frequency at which this beep plays can be modified in the settings.
 	uint8_t sound = 0x00;
 
+	// Tracks which keys are currently being pressed through logical binary operations.
 	uint16_t keys = 0;
-	uint8_t pressed_key = 0;
-	bool is_held = false;
-	bool halt = false;
-	bool switched_on = false;
 
-	uint16_t current_instruction = 0;
+	// The last pressed key.
+	uint8_t pressed_key = 0; 
 
-	std::thread delay_N_sound_thread;
-	std::thread cpu_thread;
+	// Whether to keep looping through a specific instruction. (0x...)
+	bool halt = false; 
 
-	bool closed = false;
-	int iteration = 0;
+	// Helper variable for the same instruction as halt
+	bool switched_on = false; 
 
-	uint32_t frameStart = 0;
-	int frametime = 0;
+	// Which instruction is currently being accessed.
+	uint16_t current_instruction = 0; 
 
+	// How many instructions to be executed every second.
+	// Can be modified in the settings.
 	int instructionsPerSecond = 700;
-	int millisecondsPerInstruction = 1000 / instructionsPerSecond;
+
+	// Instance of the registers.
+	// Used with offset to access each of them.
 	uint8_t* register_pointer = (uint8_t*) new Registers;
 
-	bool stop_cpu = false, stop_delay = false, stop_sound = false;
-	bool playing_audio = false;
-
+	// How much the delay timer gets decrement by every second.
+	// Can be modified in the settings.
 	int delayDecPerSec = 60;
+
+	// How much the sound timer gets decrement by every second.
+	// Can be modified in the settings.
 	int soundDecPerSec = 60;
 
-	int instructions_per_delay_decrement = round((double)instructionsPerSecond / delayDecPerSec);
-	int instructions_per_sound_decrement = round((double)instructionsPerSecond / soundDecPerSec);
+	// How many instructions should it take in order for the delay timer to be decremented.
+	// Useful when stepping through instructions.
+	float instructions_per_delay_decrement = (double)instructionsPerSecond / delayDecPerSec;
 
-	uint8_t status = Status::stopped;
+	// How many instructions should it take in order for the sound timer to be decremented.
+	// Useful when stepping through instructions.
+	float instructions_per_sound_decrement = (double)instructionsPerSecond / soundDecPerSec;
 
-	int stepped_delay = 0;
-	int stepped_sound = 0;
+	// Tracks the current status of the emulator.
+	Status status = Status::stopped;
 
-	bool delayIsZero, soundIsZero = false;
+	// Tracks how many instructions have been executed since the delay timer was last decremented.
+	// Used to know when to decrement the delay timer after some amount of instructions have been executed.
+	// When the emulator is running, this usually happens at a fixed amount of time (default is ~16.6667 ms).
+	// This is useful when the emulator is paused and the user manually steps through instructions.
+	int stepped_delay = 1;
 
-	int instructions_per_frame = instructionsPerSecond / Graphics::FPS;
+	// Tracks how many instructions have been executed since the sound timer was last decremented.
+	// Used to know when to decrement the sound timer after some amount of instructions have been executed.
+	// When the emulator is running, this usually happens at a fixed amount of time (default is ~16.6667 ms).
+	// This is useful when the emulator is paused and the user manually steps through instructions.
+	int stepped_sound = 1;
 
+	// Tracks how many instructions should be executed every frame.
+	float instructions_per_frame = (double) instructionsPerSecond / Graphics::FPS;
+
+	// Tracks how much the delay timer should be decremented by every frame.
 	float delay_decrement_per_frame = (double)delayDecPerSec / Graphics::FPS;
+
+	// Tracks how much the sound timer should be decremented by every frame.
 	float sound_decrement_per_frame = (double)soundDecPerSec / Graphics::FPS;
 
+	// Tracks the current framerate. Sampled every 10 frames in the main loop.
 	float current_framerate = 0;
 
-	std::thread sound_thread;
-	bool closing_sound_thread = false;
-
-	// Optimal, Cosmac VIP, CHIP-48 or Super-Chip
+	// Tracks the current implementation.
 	Implementation implementation = Implementation::Optimal;
 
+	// Frees the memory that was allocated.
+	void close() {
+		delete register_pointer;
+	}
+
+	// Decrements the delay timer by the amount specified, as long as delay > 0.
 	void decrement_delay(int times) {
 		for (int i = 0; i < times; i++) {
 			if (delay > 0) delay--;
 		}
 	}
 
+	// Decrements the sound timer by the amount specified, as long as sound > 0.
 	void decrement_sound(int times) {
 		for (int i = 0; i < times; i++) {
 			if (sound > 0) sound--;
 		}
 	}
 
-	void update_delay_N_sound_manual() {
-		if (delay > 0) delay--;
-		if (sound > 0) sound--;
+	// Returns whether or not the given key is held
+	bool is_held(uint8_t hexc) {
+		return (keys >> hexc) & 0x1;
 	}
 
-	void update_delay_N_sound() {
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)(1000 / 60)));
-
-		update_delay_N_sound_manual();
-	}
-
+	// Executes one single instruction.
 	void step_one() {
+		// Decodes and updates the tracker of the current instruction.
 		uint16_t instruction = (*pc << 8) | *(pc + 1);
 		current_instruction = instruction;
 
+		// Increments the program counter by 2, as every instruction is made up of 2 bytes.
+		// After this function returns, if not modified by any instruction,
+		// the next instruction will be at the address of the incremented program counter.
 		pc += 2;
-		uint16_t next_instruction = (*pc << 8) | *(pc + 1);
 
-		uint8_t first_nibble = instruction >> 12; // Tells which type of instruction
-		uint8_t X = (instruction >> 8) & 0xF; // Looks up one of the 16 VX registers from V0 through VF;
-		uint8_t Y = (instruction >> 4) & 0xF; // Looks up one of the 16 VY registers from V0 through VF;
-		uint8_t N = instruction & 0xF; // Fourth nibble
-		uint8_t NN = instruction & 0xFF; // Second byte (8-bit immediate number)
-		uint16_t NNN = instruction & 0xFFF; // second, third, fourth nibbles (12-bit immediate memory address)
+		// Decodes and stores the first nibble (or half-byte)
+		uint8_t first_nibble = instruction >> 12; 
 
+		// Decodes and stores the second nibble (or second half-byte)
+		uint8_t X = (instruction >> 8) & 0xF;
+
+		// Decodes and stores the third nibble (or third half-byte)
+		uint8_t Y = (instruction >> 4) & 0xF;
+
+		// Decodes and stores the fourth nibble (or fourth half-byte)
+		uint8_t N = instruction & 0xF;
+
+		// Decodes and stores the second byte
+		// An immediate value (not an address)
+		uint8_t NN = instruction & 0xFF;
+
+		// Decodes and stores the second, third and fourth nibbles or last 1 and a half bytes
+		// A 12-bit memory address
+		uint16_t NNN = instruction & 0xFFF;
+
+
+		// A pointer the register X
 		uint8_t* vx = (uint8_t*)(register_pointer + X);
+
+		// A pointer to the register Y
 		uint8_t* vy = (uint8_t*)(register_pointer + Y);
+
+		// A pointer to the flag (15th) register
 		uint8_t* carry_flag = (uint8_t*)(register_pointer + 15);
+
+		// A pointer to the index register
+		// Stores 12-bit memory addresses
 		uint16_t* index_register = (uint16_t*)(register_pointer + 16);
 
 		switch (first_nibble) {
@@ -345,7 +403,7 @@ namespace CPU
 			switch (NN) {
 			case (0x9E): {
 				// Skip if key in register VX is pressed
-				if ((keys >> *vx) & 1) {
+				if (is_held(*vx)) {
 					pc += 2;
 				}
 				else {
@@ -354,7 +412,7 @@ namespace CPU
 					   break;
 			case (0xA1): {
 				// Skip if key in register VX is not pressed
-				if (!((keys >> *vx) & 1)) {
+				if (!is_held(*vx)) {
 					pc += 2;
 				}
 				else {
@@ -511,65 +569,103 @@ namespace CPU
 			break;
 		}
 
-		stepped_delay++;
-		stepped_sound++;
+		// Only occurs if the emulator is paused.
+		// This function can only be executed when paused
+		// if the user steps through instructions.
+		if (CPU::status == Status::paused) {
 
-		if (CPU::status == Status::paused) { // If stepping manually
-			if ((stepped_delay % instructions_per_delay_decrement) == 0) // Enough instructions have ran that we should decrement timers
-			{
-				stepped_delay = 0;
-				decrement_delay(1);
+			// If the delay timer is being decremented at a rate of at least 1 per second
+			if (CPU::delayDecPerSec > 0) {
+
+				// If we should decrement the delay timer at a rate
+				// greater than once per instruction
+				// Decrement the delay timer by a rounded approximation of the rate
+				if (CPU::instructions_per_delay_decrement <= 1) {
+					int res_d = (int)round(1.f / (double)CPU::instructions_per_delay_decrement);
+					CPU::decrement_delay(res_d);
+				}
+
+				// If we should decrement the delay timer at a rate
+				// lesser than once per instruction
+				// Wait until the approximate amount of instructions have been executed
+				// Then decrement 1 from the delay timer and reset the tracker
+				else {
+					int rounded = round(CPU::instructions_per_delay_decrement);
+					if (rounded == stepped_delay) {
+						stepped_delay = 1;
+						CPU::decrement_delay(1);
+					}
+					else if (rounded > stepped_delay) {
+						stepped_delay++;
+					}
+					else if (rounded < stepped_delay) {
+						stepped_delay = 1;
+					}
+				}
 			}
 
-			if ((stepped_sound % instructions_per_sound_decrement) == 0) // Enough instructions have ran that we should decrement timers
-			{
-				stepped_sound = 0;
-				decrement_sound(1);
+			// If the sound timer is being decremented at a rate of at least 1 per second
+			if (CPU::soundDecPerSec > 0) {
+
+				// If we should decrement the sound timer at a rate
+				// greater than once per instruction
+				// Decrement the sound timer by a rounded approximation of the rate
+				if (CPU::instructions_per_sound_decrement <= 1) {
+					int res_d = (int)round(1.f / (double)CPU::instructions_per_sound_decrement);
+					CPU::decrement_sound(res_d);
+				}
+
+				// If we should decrement the sound timer at a rate
+				// lesser than once per instruction
+				// Wait until the approximate amount of instructions have been executed
+				// Then decrement 1 from the sound timer and reset the tracker
+				else {
+					int rounded = round(CPU::instructions_per_sound_decrement);
+					if (rounded == stepped_sound) {
+						stepped_sound = 1;
+						CPU::decrement_sound(1);
+					}
+					else if (rounded > stepped_sound) {
+						stepped_sound++;
+					}
+					else if (rounded < stepped_sound) {
+						stepped_sound = 1;
+					}
+				}
 			}
+
 		}
 	}
 
+	// Executes the amount of instructions passed as an argument
 	void step_many(int steps) {
 		for (int i = 0; i < steps; i++) {
 			step_one();
 		}
 	}
 
+	// Skips the next instruction
+	// Increments program counter by 2 because every instruction represents 2 bytes
 	void skip_one() {
 		pc += 2;
 	}
 
+	// Skips the amount of instructions passed as an argument
 	void skip_many(int skips) {
 		for (int i = 0; i < skips; i++) {
 			skip_one();
 		}
 	}
 
-	void fetch_decode_exec() {
-		while (!stop_cpu) {
-			while (Graphics::updating_colors) {
-
-			}
-
-			if (status == Status::running) {
-				step_one();
-			}
-		}
-	}
-
-	void set_pressed(uint16_t hexc) {
-		keys |= (1 << hexc);
-	}
-
-	void release_pressed(uint16_t hexc) {
-		keys &= (0xFFFF ^ (1 << hexc));
-	}
-
+	// Turns on the bit that represents the hexadecimal key pressed
+	// Sets last pressed key to the pressed key
+	// If this executes while the emulator was halted, unhalt it
+	// This is used by instruction FX0A, which halts emulation
+	// until some key is pressed, then store the key into register X
 	void HandlePressDown(uint8_t hexc) {
 		if (hexc < 16) {
-			set_pressed(hexc);
+			keys |= (1 << hexc);
 			pressed_key = hexc;
-			is_held = true;
 
 			if (halt) {
 				halt = false;
@@ -577,21 +673,28 @@ namespace CPU
 		}
 	}
 
+	// Turns off the bit that represents the hexadecimal key pressed.
+	// If last pressed key is the same as this key and held key flag is true
+	// Set held key flag off
 	void HandlePressUp(uint8_t hexc) {
 		if (hexc < 16) {
-			release_pressed(hexc);
-
-			if (hexc == pressed_key && is_held) {
-				is_held = false;
-			}
+			keys &= (0xFFFF ^ (1 << hexc));
 		}
 	}
 
 
-
+	// Converts base-10 value "dec" into its base-16 representation
+	// Stores the conversion in the "storage" character array of size 5, which is passed as an argument
+	// Given "dec" is a 16-bit value, the base-16 representation will be up to 1000
+	// Hence why size 5 if we include the null terminator
 	void decToHex(char (&storage)[5], uint16_t dec) {
 		int2str(dec, storage, 16, 1);
 
+		// This commented code converts the result 
+		// Into uppercase and also pads with 0 to the left if "dec" is less than 4096 (0x1000)
+		// a   -> 000A
+		// a0  -> 00A0
+		// a00 -> 0A00
 		/*
 		for (int i = 0; i < 4; i++) {
 			storage[i] = (char) toupper(storage[i]);
@@ -624,102 +727,8 @@ namespace CPU
 		return;
 	}
 
-	// Free after use
-	char* decToHex_alternative(uint16_t dec) {
-		//char* addr = (char*)malloc(5);
-		//_itoa_s(dec, storage, 16);
-		char* storage = (char*) malloc(5);
-		//int2str(dec, &storage[0], 16, 1);
-		int2str(dec, storage, 16, 1);
-
-		/*
-		for (int i = 0; i < 4; i++) {
-			storage[i] = (char) toupper(storage[i]);
-		}
-		*/
-		/*
-		if (dec <= 0x000F) {
-			char temp = storage[0];
-			storage[0] = storage[1] = storage[2] = '0';
-			storage[3] = temp;
-		}
-		else if (dec <= 0x00FF) {
-			char temp1 = storage[0];
-			char temp2 = storage[1];
-			storage[0] = storage[1] = '0';
-			storage[2] = temp1;
-			storage[3] = temp2;
-		}
-		else if (dec <= 0x0FFF ) {
-			char temp1 = storage[0];
-			char temp2 = storage[1];
-			char temp3 = storage[2];
-			storage[0] = '0';
-			storage[1] = temp1;
-			storage[2] = temp2;
-			storage[3] = temp3;
-		}
-		*/
-
-		return storage;
-	}
-
-	void NdecToHex(char(&storage)[5], uint16_t dec, uint8_t type) {
-		//char* addr = (char*)malloc(5);
-		//_itoa_s(dec, storage, type);
-		int2str(dec, storage, 16, 1);
-
-		/*
-		for (int i = 0; i < 4; i++) {
-			storage[i] = (char)toupper(storage[i]);
-		}
-		*/
-		/*
-		if (dec <= 0x000F) {
-			char temp = storage[0];
-			storage[0] = storage[1] = storage[2] = '0';
-			storage[3] = temp;
-		}
-		else if (dec <= 0x00FF) {
-			char temp1 = storage[0];
-			char temp2 = storage[1];
-			storage[0] = storage[1] = '0';
-			storage[2] = temp1;
-			storage[3] = temp2;
-		}
-		else if (dec <= 0x0FFF ) {
-			char temp1 = storage[0];
-			char temp2 = storage[1];
-			char temp3 = storage[2];
-			storage[0] = '0';
-			storage[1] = temp1;
-			storage[2] = temp2;
-			storage[3] = temp3;
-		}
-		*/
-
-		return;
-	}
-
-	void reset() {
-		status = Status::stopped;
-		stop_cpu = stop_sound = stop_delay = false;
-		closed = false;
-
-		delay = 0x00;
-		sound = 0x00;
-		keys = 0;
-		pressed_key = 0;
-		is_held = false;
-		halt = false;
-		switched_on = false;
-
-		
-		iteration = 0;
-
-		frameStart = 0;
-		frametime = 0;
-
+	// Resets all registers
+	void clear_registers() {
 		*(register_pointer) = NULL;
 		*(register_pointer + 1) = NULL;
 		*(register_pointer + 2) = NULL;
@@ -736,30 +745,47 @@ namespace CPU
 		*(register_pointer + 13) = NULL;
 		*(register_pointer + 14) = NULL;
 		*(register_pointer + 15) = NULL;
-		*(register_pointer + 16) = NULL;
-
-		pc = (uint8_t*)(RAM::buffer + RAM::interpreterSpaceInBytes);
-
-		for (int i = 0; i < Graphics::horizontal_tiles * Graphics::vertical_tiles; i++) {
-			Graphics::original_pixels[i] = Graphics::background;
-		}
-		
-		// clear stack
-		for (int i = 0; i < RAM::stack_size; i++) {
-			RAM::sp_addr[i] = 0;
-		}
+		*((uint16_t*)(register_pointer + 16)) = NULL;
 	}
 
+	// Stops emulation and resets all emulation-specific variables to default.
+	// Triggered by the "Reset ROM" button 
+	// Or when a new ROM is loaded through the "Load ROM" button
+	void reset() {
+		status = Status::stopped;
+
+		// Reset variables
+		delay = 0x00;
+		sound = 0x00;
+		keys = 0;
+		pressed_key = 0;
+		halt = false;
+		switched_on = false;
+
+		// Reset registers
+		clear_registers();
+
+		// Reset program counter
+		pc = (uint8_t*)(RAM::buffer + RAM::interpreterSpaceInBytes);
+
+		// Reset pixels
+		Graphics::clear_window();
+
+		// Reset stack
+		RAM::clear_stack();
+	}
+
+	// Triggered by "Start ROM" and "Reload ROM" buttons.
+	// Both buttons do the same thing, but due to semantics
+	// I chose to disable the "Start ROM" button after it has already been pressed
+	// And I also disable the "Reload ROM" button when the "Start ROM" button hasn't been pressed
+	// This way both buttons are mutually exclusive and each has a different meaning
 	void start() {
 		reset();
 		status = Status::running;
 	}
 
-	void decrement(int times) {
-		delay -= times;
-		sound -= times;
-	} 
-
+	// Same as decToHex, except it also pads the result with zeroes to the left
 	const char* decToHex_and_pad(uint16_t dec) {
 		char storage[5];
 		int2str(dec, storage, 16, 1);
@@ -802,6 +828,9 @@ namespace CPU
 		return storage;
 	}
 
+	// Given some register "reg", format it as "VX (#Dec)"
+	// Where "#Dec" is the base-10 representation of the value stored in the register X
+	// Store the formatted string in the character array of size 9 "result", passed as an argument
 	void convert_register(char (&result)[9], uint8_t reg) {
 		//char result[9] = "";
 		//char* result = (char*) calloc(9, 1);
@@ -837,7 +866,10 @@ namespace CPU
 		result[final_char_idx] = '\0'; // VX (__)\0
 	}
 
-	// Free returned pointer after use
+	// Given some address "addr", format it as "0xADDR (#Dec)"
+	// Where "#Dec" is the base-10 representation of address
+	// And "ADDR" is the base-16 representation
+	// Store the formatted string in the character array of size 15 "result", passed as an argument
 	void convert_addr(char (&result)[15], uint16_t addr) {
 		char conversion_res[5] = "";
 		decToHex(conversion_res, addr);
@@ -857,16 +889,16 @@ namespace CPU
 		std::to_chars(register_value_arr, register_value_arr + 5, addr);
 		//strcpy(result + 2 + i + 2, register_value_arr);
 		int final_char_idx = 0;
-		if (addr < 10) { // VX (.
+		if (addr < 10) {
 			result[2 + i + 2] = register_value_arr[0];
 			final_char_idx = 2 + i + 4;
 		}
-		else if (addr < 100) { // VX (..
+		else if (addr < 100) {
 			result[2 + i + 2] = register_value_arr[0];
 			result[2 + i + 3] = register_value_arr[1];
 			final_char_idx = 2 + i + 5;
 		}
-		else if (addr < 1000) { // VX (...
+		else if (addr < 1000) {
 			result[2 + i + 2] = register_value_arr[0];
 			result[2 + i + 3] = register_value_arr[1];
 			result[2 + i + 4] = register_value_arr[2];
@@ -892,6 +924,16 @@ namespace CPU
 		result[final_char_idx] = '\0';
 	}
 
+	// Helper function for formatting an instruction and some data into a readable string
+	// i.e. make_instruction_short(result, "LD", "r,r", 3, 5) -> "LD V3 (#V3), V5 (#V5)"
+	// Where #V3 is the decimal representation of the value in register 3, likewise with #V5
+	// Arguments:
+	// result - A character array of size 40 where the formatted string will be stored
+	// operation - The instruction
+	// format - A string representing the format (one of "r,r", "r,a", "a, r", "a, a", "r, 0", "a,0" and "0,0")
+	// 'r' represents register, 'a' represents address and '0' represents nothing
+	// n1 and n2 - 16-bit values that should follow the same order as "format". i.e. If "r,r", n1 should be
+	// the register at position 1, n2 should be the register at position 2.
 	void make_instruction_short(char (&result)[40],const char* operation, const char* format, uint16_t n1, uint16_t n2) {
 		//if (format[0] != '0') assert(n1 != NULL);
 		//if (format[2] != '0') assert(n2 != NULL);
@@ -974,6 +1016,16 @@ namespace CPU
 		}
 	}
 
+	// Format the current instruction through "make_instruction_short"
+	// This is called in the disassembler for every instruction
+	// Arguments:
+	// desc - A character array of size 40 where the formatted string will be stored
+	// instruction - The instruction to be converted into its string format
+	// short_desc - Curretly irrelevant, but in the future could filter
+	// whether to store in "desc" the short description version of the instruction
+	// i.e. "LD V3 (55), V2 (32)"
+	// or the longer, more descriptive version, which has not yet been implemented
+	// i.e. "Stores the value of register 2 (32) in register 3 (55)."
 	void get_instruction_desc_from_value(char (&desc)[40], uint16_t instruction, bool short_desc) {
 		uint8_t first_nibble = instruction >> 12; // Tells which type of instruction
 		uint8_t X = (instruction >> 8) & 0xF; // Looks up one of the 16 VX registers from V0 through VF;
@@ -987,7 +1039,9 @@ namespace CPU
 		uint8_t* carry_flag = (uint8_t*)(register_pointer + 15);
 		uint16_t* index_register = (uint16_t*)(register_pointer + 16);
 
-		const char* instruction_string = CPU::decToHex_and_pad(instruction);
+		// Converts and stores the current base-10 representation of the instruction
+		// Into its base-16 counterpart, while also padding with 0's to the left
+		// const char* instruction_string = CPU::decToHex_and_pad(instruction);
 
 		switch (first_nibble) {
 		case (0x0):

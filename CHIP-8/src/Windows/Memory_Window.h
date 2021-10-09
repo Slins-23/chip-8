@@ -13,7 +13,7 @@ namespace Memory_Window {
 
 		for (int i = 0; i < RAM::byte_rows; i++) {
 			char addr[5];
-			CPU::NdecToHex(addr, i, RAM::bytes_per_row);
+			CPU::decToHex(addr, i);
 
 			uint8_t* bytes = (uint8_t*)malloc(RAM::bytes_per_row);
 			memcpy(bytes, RAM::rom_data + (16 * i), RAM::bytes_per_row);

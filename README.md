@@ -44,11 +44,13 @@ Also note that I didn't see any CHIP-8 source code when making this - I only rea
 # Implementation notes
 * Instructions don't currently emulate any one specific system;
 
+* Memory is emulated as an 8-bit buffer, therefore all functionality that handles CHIP-8 addresses works with offsets from the beginning of this buffer. This means that the address stored in the index register, for example, is used as an offset from the beginning of this buffer.
+
 * Addresses 0x000-0x1FF are reserved for interpreter-specific data, such as fonts. Addresses after 0x200 are reserved for the ROM;
   
 * Fonts are stored in the first 80 bytes (0x00-0x50 addresses). You can find their hexadecimal representation in the "RAM.h" file, in the "font" array;
 
-* Stack is capable of storing up to 16 12-bit (16-bit in practice) addresses;
+* Stack is capable of storing up to 16 12-bit (16-bit in practice) addresses, but there are no explicit restrictions;
 
 # Features
 * Functional CHIP-8 emulation (As far as I'm concerned);
